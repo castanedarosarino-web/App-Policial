@@ -2,129 +2,126 @@ import streamlit as st
 from fpdf import FPDF
 from datetime import datetime
 
-# Configuración de la aplicación para que se vea bien en celulares
+# Configuración técnica para dispositivos móviles
 st.set_page_config(page_title="Gestión Operativa URII", page_icon="👮")
 
-# Estilo para mejorar la visualización en pantallas táctiles
 st.markdown("""
     <style>
-    .stButton>button {
-        width: 100%;
-        height: 3em;
-        font-weight: bold;
-    }
+    .stButton>button { width: 100%; height: 3.5em; font-weight: bold; background-color: #182c54; color: white; border-radius: 10px; }
+    .stTextInput>div>div>input { background-color: #f0f2f6; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("👮 Sistema de Actas URII")
-st.info("Complete los datos para generar el acta formal en PDF.")
 
-# --- PESTAÑAS PARA ORGANIZAR LA CARGA ---
-tab1, tab2, tab3 = st.tabs(["🚔 Servicio", "👤 Demorado", "✍️ Cierre"])
+# --- PESTAÑAS DE CARGA ---
+tab1, tab2, tab3 = st.tabs(["🚔 Intervención", "👤 Demorado", "✍️ Relato y Cierre"])
 
 with tab1:
-    st.subheader("Datos de la Intervención")
-    unidad = st.selectbox("Unidad", ["G.T.M.", "C.R.E.", "B.O.U.", "CRIA", "SUB CRIA"])
-    tercio = st.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
-    movil = st.text_input("Móvil", value="12.116")
-    jurisdiccion = st.text_input("Jurisdicción / Dependencia", placeholder="Ej: SUB 18")
-    lugar = st.text_input("Lugar del Hecho", placeholder="Calle y Altura / Intersección")
+    col1, col2 = st.columns(2)
+    unidad = col1.selectbox("Unidad", ["C.R.E. ROSARIO", "G.T.M.", "B.O.U.", "P.A.T.", "OTRA"])
+    tercio = col2.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
+    movil = st.text_input("Móvil / Legajo", value="2308")
+    lugar = st.text_input("Lugar de la demora (Calle y Altura)")
+    dependencia = st.text_input("Dependencia de traslado", value="SUB CRIA 18")
 
 with tab2:
-    st.subheader("Filiación Completa (Sistema)")
-    dni = st.text_input("DNI (Sin puntos)")
-    col1, col2 = st.columns(2)
-    with col1:
-        apellido = st.text_input("Apellido/s")
-        apodo = st.text_input("Apodo")
-    with col2:
-        nombre = st.text_input("Nombre/s")
-        edad = st.text_input("Edad")
-    
-    padres = st.text_input("Padres (Nombre completo de ambos)")
+    apellido = st.text_input("Apellido/s")
+    nombre = st.text_input("Nombre/s")
+    dni = st.text_input("DNI", value="No recuerda")
+    nacionalidad = st.text_input("Nacionalidad", value="Argentina")
+    padres = st.text_input("Hijo de (Padre y Madre)")
+    nacimiento = st.text_input("Fecha de Nac. / Edad")
     domicilio = st.text_input("Domicilio Real")
-    est_civil = st.selectbox("Estado Civil", ["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO"])
 
 with tab3:
-    st.subheader("Finalización del Acta")
-    motivo = st.selectbox("Motivo de la demora", [
-        "Actitud evasiva ante la presencia policial",
-        "Observación sospechosa de domicilios/vehículos",
-        "Carencia de DNI y conducta previa injustificada",
-        "Aportación de datos filiatorios contradictorios"
-    ])
-    redacto = st.text_input("Redactó (Grado y Apellido)")
-    personal = st.text_area("Resto del Personal Actuante")
-    nro_acta = st.text_input("Acta N° / Año")
+    # Menú desplegable con tus motivos técnicos
+    opciones_motivos = [
+        "Se detecta al masculino ocultándose de la visual de la prevención. Al requerir su identificación, responde con evasivas y manifiesta no poseer documentación.",
+        "El individuo, ante la proximidad del personal, cambia bruscamente su sentido de marcha e intenta ocultar su rostro, no aportando datos filiatorios fehacientes.",
+        "Se observa al masculino apostado de forma prolongada. Al ser abordado, manifiesta versiones contradictorias y carece de acreditación de identidad.",
+        "Se detecta al sujeto realizando un seguimiento cercano a terceros. Al notar la presencia policial, adopta conducta esquiva y se niega a brindar datos.",
+        "El causante observaba objetivos en la zona, retirándose presurosamente al advertir el móvil. Tras ser alcanzado, no posee DNI para su identificación.",
+        "OTRO (Redactar manualmente)"
+    ]
+    
+    seleccion = st.selectbox("Motivo de la demora (Art. 10 Bis):", opciones_motivos)
+    
+    if seleccion == "OTRO (Redactar manualmente)":
+        motivo_final = st.text_area("Escriba la circunstancia específica:")
+    else:
+        motivo_final = seleccion
 
-# --- LÓGICA DEL PDF ---
-def generar_pdf():
-    pdf = FPDF()
+    st.divider()
+    redacto = st.text_input("Suscrito (Grado y Apellido)")
+    refuerzo = st.text_input("Refuerzo (Grado y Apellido)")
+
+# --- CONSTRUCCIÓN DEL PDF (MODELO CORRECTOR) ---
+class ActaURII(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 12)
+        self.cell(190, 10, "ACTA DE PROCEDIMIENTO - ARTÍCULO 10 BIS LEY 7.395", ln=True, align='C')
+        self.ln(5)
+
+def generar_acta_oficial():
+    pdf = ActaURII()
     pdf.add_page()
+    pdf.set_font('Arial', '', 10)
     
-    # Encabezado Institucional
-    pdf.set_fill_color(30, 50, 100) # Azul oscuro
-    pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(190, 12, "ACTA DE PROCEDIMIENTO - LEY 7.395", border=1, ln=True, align='C', fill=True)
+    # Fecha y Hora automáticas
+    ahora = datetime.now()
+    meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    fecha_texto = f"{ahora.day} de {meses[ahora.month-1]} de {ahora.year}"
     
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", 'B', 10)
+    # Cuerpo del Acta (Siguiendo el modelo PDF oficial)
+    intro = (f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} "
+             f"del año {ahora.year}, siendo las {ahora.strftime('%H:%M')} hs, el funcionario policial actuante {redacto.upper()} "
+             f"juntamente como refuerzo {refuerzo.upper()}, ambos pertenecientes a {unidad} de la UR II Rosario, a los fines legales que diera a lugar "
+             f"se hace CONSTAR: Que de conformidad a lo establecido en el Art. 10 bis de la Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 "
+             f"se procede a DEMORAR en calle {lugar.upper()} al ciudadano quien manifiesta ser {apellido.upper()}, {nombre.upper()}, "
+             f"de nacionalidad {nacionalidad.upper()}, DNI {dni}, domiciliado en {domicilio.upper()}, hijo de {padres.upper()}, "
+             f"nacido el/con edad de {nacimiento}.")
+    
+    pdf.multi_cell(190, 6, intro)
     pdf.ln(5)
     
-    # Cuadro de cabecera
-    pdf.cell(95, 8, f"FECHA: {datetime.now().strftime('%d/%m/%Y')}", border=1)
-    pdf.cell(95, 8, f"HORA: {datetime.now().strftime('%H:%M')}", border=1, ln=True)
-    pdf.cell(190, 8, f"UNIDAD: {unidad} | TERCIO: {tercio} | MOVIL: {movil}", border=1, ln=True)
+    # Motivo (Recuadro)
+    pdf.set_font('Arial', 'B', 10)
+    pdf.cell(190, 7, "Adoptándose esta medida por el motivo de que ante la presencia policial:", ln=True)
+    pdf.set_font('Arial', '', 10)
+    pdf.multi_cell(190, 7, f" {motivo_final}", border=1)
     pdf.ln(5)
+    
+    # Base Legal y Derechos (Copiado fiel del modelo corrector)
+    pdf.set_font('Arial', '', 9)
+    legal = ("Razón para lo cual y para la constancia de su identidad con el registro policial en los términos y alcances del Art. 10 Bis Ley 7395/75, "
+             "introducida por Ley 11.516/97 y Resol. 0745/16. A continuación se imponen al demorado sus derechos y garantías: "
+             "a) Que será demorado en el lugar y trasladado a dependencia; b) Que la demora podrá prolongarse hasta constatar su identificación "
+             "sin que esta supere las SEIS (6) HORAS; c) Que en ningún momento ha de ser incomunicado; d) Que tiene derecho a efectuar una llamada telefónica; "
+             "e) Que no será alojado con detenidos por delitos; f) Que se procede a labrar acta ad-hoc con testigos.")
+    pdf.multi_cell(190, 5, legal)
+    pdf.ln(5)
+    
+    pdf.set_font('Arial', '', 10)
+    pdf.multi_cell(190, 6, f"Se hace constar que se traslada el procedimiento a {dependencia.upper()} para su correspondiente registro.")
 
-    # Relato
-    pdf.set_font("Arial", 'B', 11)
-    pdf.cell(190, 7, "RELATO DE LA INTERVENCIÓN:", ln=True)
-    pdf.set_font("Arial", size=11)
-    relato = (f"En la ciudad de ROSARIO, Provincia de Santa Fe, el suscrito {redacto.upper()} "
-              f"junto al personal {personal.upper()}, proceden en {lugar.upper()} a la demora "
-              f"del ciudadano {apellido.upper()}, {nombre.upper()} (DNI {dni}), quien ante la "
-              f"presencia policial demuestra {motivo.lower()}. Se traslada a {jurisdiccion.upper()} "
-              f"en virtud del Art. 10 Bis Ley 7.395.")
-    pdf.multi_cell(190, 8, relato, border=1)
-    
-    # Cuadro de Filiación
-    pdf.ln(5)
-    pdf.set_font("Arial", 'B', 11)
-    pdf.cell(190, 8, "DATOS FILIATORIOS (SISTEMA)", border=1, ln=True, fill=False)
-    pdf.set_font("Arial", size=10)
-    filiacion = f"Apodo: {apodo}\nPadres: {padres}\nEstado Civil: {est_civil}\nDomicilio: {domicilio}"
-    pdf.multi_cell(190, 8, filiacion, border=1)
+    # Firmas (3 columnas como el modelo)
+    pdf.ln(30)
+    pdf.cell(63, 5, "____________________", 0, 0, 'C')
+    pdf.cell(63, 5, "____________________", 0, 0, 'C')
+    pdf.cell(63, 5, "____________________", 0, 1, 'C')
+    pdf.set_font('Arial', 'B', 8)
+    pdf.cell(63, 5, "PERSONAL ACTUANTE", 0, 0, 'C')
+    pdf.cell(63, 5, "DEMORADO", 0, 0, 'C')
+    pdf.cell(63, 5, "TESTIGO / OF. GUARDIA", 0, 1, 'C')
 
-    # Firmas
-    pdf.ln(25)
-    pdf.cell(95, 10, "___________________", 0, 0, 'C')
-    pdf.cell(95, 10, "___________________", 0, 1, 'C')
-    pdf.cell(95, 5, "FIRMA ACTUANTE", 0, 0, 'C')
-    pdf.cell(95, 5, "FIRMA DEMORADO", 0, 1, 'C')
-    
     return pdf.output(dest='S').encode('latin-1')
 
-# --- BOTONES DE ACCIÓN ---
-st.markdown("---")
-if st.button("🚀 GENERAR ACTA PDF"):
-    if not dni or not apellido:
-        st.error("Por favor, complete al menos Apellido y DNI.")
+# Botón de acción
+if st.button("📄 GENERAR ACTA 10 BIS"):
+    if apellido and redacto:
+        pdf_out = generar_acta_oficial()
+        st.download_button("⬇️ DESCARGAR PDF OFICIAL", data=pdf_out, file_name=f"10Bis_{apellido}.pdf", mime="application/pdf")
+        st.success("Acta generada siguiendo el protocolo URII.")
     else:
-        try:
-            pdf_output = generar_pdf()
-            st.download_button(
-                label="⬇️ DESCARGAR PDF",
-                data=pdf_output,
-                file_name=f"Acta_{dni}.pdf",
-                mime="application/pdf"
-            )
-            st.success("¡Acta generada con éxito!")
-        except Exception as e:
-            st.error(f"Error al generar PDF: {e}")
-
-if st.button("🟢 GENERAR TEXTO WHATSAPP"):
-    texto_wa = f"*{unidad} - {tercio}*\n*DEMORA ART 10 BIS*\n\n*LUGAR:* {lugar}\n*DEMORADO:* {apellido} {nombre}\n*DNI:* {dni}\n*JURISD:* {jurisdiccion}\n*REDACTÓ:* {redacto}"
-    st.code(texto_wa)
-    st.caption("Copiá el texto de arriba para el grupo.")
+        st.error("Faltan datos obligatorios (Apellido y Funcionario).")
