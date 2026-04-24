@@ -3,7 +3,7 @@ from fpdf import FPDF
 from datetime import datetime
 
 # Configuración de la App
-st.set_page_config(page_title="ACTA DE DEMORA ART. 10 BIS", page_icon="👮")
+st.set_page_config(page_title="ACTA DE DEMORA ART 10 BIS LEY 7.395", page_icon="👮")
 
 # Estilos personalizados
 st.markdown("""
@@ -13,7 +13,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("👮 ACTA DE DEMORADO 10 BIS")
+st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395")
 st.markdown('<p class="autor-text">creado: Sub Crio Castañeda Juan</p>', unsafe_allow_html=True)
 
 # --- PESTAÑAS ---
@@ -75,7 +75,7 @@ with tab4:
 
 # --- LÓGICA DE PDF ---
 def generar_pdf_espejo():
-    # Márgenes de 30mm (3cm) arriba e izquierda, 15mm derecha
+    # Márgenes de 3 cm (30mm) superior e izquierdo
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_margins(left=30, top=30, right=15)
     pdf.add_page()
@@ -83,13 +83,14 @@ def generar_pdf_espejo():
     ahora = datetime.now()
     meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
     
+    # Título actualizado en el PDF
     pdf.set_font('Arial', 'B', 12)
-    pdf.cell(165, 10, "ACTA DE PROCEDIMIENTO - ARTÍCULO 10 BIS LEY 7.395", ln=True, align='C')
+    pdf.cell(165, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
     pdf.ln(5)
     
     pdf.set_font('Arial', '', 12)
     
-    # Texto unificado para mantener el justificado Arial 12 Interlineado 1.5
+    # Párrafo principal con interlineado 1.5 (height=9)
     intro_txt = (f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
                  f"siendo las {hora_demora} hs, el funcionario policial actuante {actuante_ap.upper()} {actuante_nom.upper()} a cargo de la unidad móvil {movil} juntamente como refuerzo {refuerzo_ap.upper()} {refuerzo_nom.upper()}, "
                  f"ambos pertenecientes a {unidad} de la UR II Rosario, a los fines legales que diera a lugar se hace CONSTAR: Que de conformidad a lo establecido en el Art. 10 bis de la "
@@ -123,7 +124,7 @@ def generar_pdf_espejo():
     pdf.set_font('Arial', 'B', 12)
     pdf.cell(165, 10, "HORA DE CESE: _________ hs. :-", ln=True)
 
-    # Firmas
+    # Bloque de Firmas
     pdf.ln(15)
     w = 165/3
     pdf.set_font('Arial', 'B', 9)
@@ -136,10 +137,9 @@ def generar_pdf_espejo():
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- PARTE WHATSAPP CORREGIDA ---
-# Aquí se asocian las variables dinámicamente
+# --- PARTE WHATSAPP DINÁMICO ---
 resumen_wa = f"""*{unidad} - {tercio}*
-*PARTE DEMORA ART 10 BIS*
+*ACTA DE DEMORA ART 10 BIS LEY 7.395*
 
 *FECHA:* {datetime.now().strftime('%d/%m/%Y')}.-
 *HORA:* {hora_demora}.-
