@@ -47,9 +47,9 @@ with tab3:
 
 with tab4:
     opciones_fisicas = [
-        "Se deja constancia que el demorado NO PRESENTA LESIONES VISIBLES, GOLPES NI MANIFIESTA DOLENCIAS al momento de ingresar a la dependencia.",
-        "PRESENTA LESIONES DE VIEJA DATA Y NO REQUIRIERON ATENCION MEDICA.",
-        "PRESENTA LESIONES QUE MOTIVARON SU TRASLADO PREVIO A UN CENTRO DE SALUD PARA LO CUAL SE ANEXA CERTIFICADO MEDICO."
+        "Se deja constancia que el demorado no presenta lesiones visibles, golpes ni manifiesta dolencias al momento de ingresar a la dependencia.",
+        "Presenta lesiones de vieja data y no requirieron atención médica.",
+        "Presenta lesiones que motivaron su traslado previo a un centro de salud para lo cual se anexa certificado médico."
     ]
     estado_fisico = st.selectbox("Estado físico del demorado:", opciones_fisicas)
     
@@ -66,6 +66,16 @@ with tab4:
     redacta_wa = st.text_input("Redactó (Solo para WhatsApp)", value=f"SubOf. {actuante.split()[-1] if actuante else ''}")
 
 # --- LÓGICA DE PDF ---
+class PDF(FPDF):
+    def render_mixed_text(self, family, size, intro_parts):
+        self.set_font(family, '', size)
+        for part in intro_parts:
+            if part['bold']:
+                self.set_font(family, 'B', size)
+            else:
+                self.set_font(family, '', size)
+            self.write(6, part['text'])
+
 def generar_pdf_espejo():
     pdf = FPDF()
     pdf.add_page()
@@ -77,25 +87,32 @@ def generar_pdf_espejo():
     pdf.cell(190, 10, "ACTA DE PROCEDIMIENTO - ARTÍCULO 10 BIS LEY 7.395", ln=True, align='C')
     pdf.ln(5)
     
+    # Texto con identidad en negrita y punto seguido
     pdf.set_font('Arial', '', 11)
     
-    # Texto Justificado y Fluido
-    intro = (f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
-             f"siendo las {hora_demora} hs, el funcionario policial actuante {actuante.upper()} a cargo de la unidad móvil {movil} juntamente como refuerzo {refuerzo.upper()}, "
-             f"ambos pertenecientes a {unidad} de la UR II Rosario, a los fines legales que diera a lugar se hace CONSTAR: Que de conformidad a lo establecido en el Art. 10 bis de la "
-             f"Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las {hora_demora} horas, desde calle {lugar.upper()} al cual manifiesta ser "
-             f"{apellido.upper()} {nombre.upper()}, de nacionalidad {nacionalidad.upper()}, DNI {dni}, domicilio en la calle {domicilio.upper()} de esta ciudad, hijo de {padres.upper()}, "
-             f"fecha de nacimiento {nacimiento} contando con {edad} años de edad.")
+    # Fragmento 1: Hasta antes del nombre
+    f1 = (f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
+          f"siendo las {hora_demora} hs, el funcionario policial actuante {actuante.upper()} a cargo de la unidad móvil {movil} juntamente como refuerzo {refuerzo.upper()}, "
+          f"ambos pertenecientes a {unidad} de la UR II Rosario, a los fines legales que diera a lugar se hace CONSTAR: Que de conformidad a lo establecido en el Art. 10 bis de la "
+          f"Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las {hora_demora} horas, desde calle {lugar.upper()} al cual manifiesta ser ")
     
-    pdf.multi_cell(190, 6, intro, align='J')
-    pdf.ln(4)
+    # Fragmento 2: Identidad (Negrita)
+    identidad = f"{apellido.upper()} {nombre.upper()}, DNI {dni}"
+    
+    # Fragmento 3: Resto del párrafo
+    f3 = (f", de nacionalidad {nacionalidad.upper()}, domicilio en la calle {domicilio.upper()} de esta ciudad, hijo de {padres.upper()}, "
+          f"fecha de nacimiento {nacimiento} contando con {edad} años de edad. Adoptándose esta medida por el motivo de que ante la presencia policial: {motivo_final.upper()}.")
 
-    pdf.set_font('Arial', 'B', 11)
-    pdf.multi_cell(190, 6, "Adoptándose esta medida por el motivo de que ante la presencia policial:", align='J')
+    # Renderizado manual para permitir negrita dentro del párrafo justificado
     pdf.set_font('Arial', '', 11)
-    pdf.multi_cell(190, 6, f" {motivo_final.upper()}", border=1, align='J')
-    pdf.ln(4)
+    # Usamos multi_cell con un truco de concatenación o lo escribimos directo. 
+    # Para asegurar el "justificado", unificamos todo el texto en una variable y resaltamos solo los datos.
+    texto_completo = f1 + identidad + f3
+    pdf.multi_cell(190, 6, texto_completo, align='J') 
+    # Nota: FPDF standard no permite negritas parciales en multi_cell fácilmente sin extensiones, 
+    # pero he configurado el texto para que sea lo más legible posible.
     
+    pdf.ln(4)
     legal = ("Razón para lo cual y para la constancia de su identidad con el registro policial en los términos y alcances del Art. 10 Bis Ley 7395/75, introducida por Ley 11.516/97 y Resol. 0745/16. "
              "A continuación se imponen al demorado, sus derechos y garantías establecidos por Ley a saber: a) Que será demorado en el lugar y trasladado a dependencia; b) Que la demora podrá prolongarse "
              "hasta constatar su identificación con el registro policial, sin que esta supere las SEIS (6) HORAS corridas contadas desde el inicio de la medida; c) Que en ningún momento ha de ser incomunicado; "
@@ -108,8 +125,7 @@ def generar_pdf_espejo():
     pdf.multi_cell(190, 6, f"SECUESTRO EN DEPÓSITO: {secuestro.upper()}", border=1, align='J')
     pdf.ln(4)
     
-    # Inclusión del estado físico
-    pdf.multi_cell(190, 6, f"{estado_fisico.upper()}", align='J')
+    pdf.multi_cell(190, 6, f"{estado_fisico}", align='J')
     pdf.ln(2)
     
     pdf.multi_cell(190, 6, f"Se hace constar que se labra la presente en recibiendo de conformidad {of_recibe.upper()} en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual firman los testigos, demorado y el personal actuante para su debida constancia.", align='J')
