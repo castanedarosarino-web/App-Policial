@@ -27,7 +27,7 @@ with tab1:
         
     tercio = col2.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
     movil = st.text_input("Móvil / Legajo", value="12.116")
-    jurisdiccion = st.text_input("Jurisdicción", value="SUB 18")
+    jurisdiccion = st.text_input("Jurisdicción de entrega", value="SUB 18")
     lugar = st.text_input("Lugar de la demora", placeholder="Ej: LOS TORDOS 317")
     hora_demora = st.text_input("Hora de la demora", value=datetime.now().strftime('%H:%M'))
     acta_nro = st.text_input("Acta Nº", placeholder="Ej: 192 / 2026")
@@ -55,7 +55,7 @@ with tab3:
 
 with tab4:
     opciones_fisicas = [
-        "Se deja constancia que el demorado no presenta lesiones visibles, golpes ni manifiesta dolencias al momento de ingresar a la dependencia.",
+        "No presenta lesiones visibles, golpes ni manifiesta dolencias al momento de ingresar a la dependencia.",
         "Presenta lesiones de vieja data y no requirieron atención médica.",
         "Presenta lesiones que motivaron su traslado previo a un centro de salud para lo cual se anexa certificado médico."
     ]
@@ -73,42 +73,31 @@ with tab4:
     of_recibe = st.text_input("Oficial de Guardia que recibe", value="suboficial Rodriguez (M)")
     redacta_wa = st.text_input("Redactó (Solo para WhatsApp)", value=f"SubOf. {actuante_ap}")
 
-# --- CLASE PDF PERSONALIZADA ---
-class ActaPDF(FPDF):
-    def write_justified_bold(self, text_parts, line_height):
-        """Permite escribir texto justificado con partes en negrita."""
-        for part, is_bold in text_parts:
-            self.set_font('Arial', 'B' if is_bold else '', 12)
-            self.write(line_height, part)
-
+# --- LÓGICA DE PDF ---
 def generar_pdf_espejo():
-    pdf = ActaPDF(orientation='P', unit='mm', format='A4')
-    pdf.set_margins(left=50, top=50, right=15)
+    # Márgenes de 30mm (3cm) arriba e izquierda, 15mm derecha
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.set_margins(left=30, top=30, right=15)
     pdf.add_page()
     
     ahora = datetime.now()
     meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
     
-    # Título
     pdf.set_font('Arial', 'B', 12)
-    pdf.cell(145, 10, "ACTA DE PROCEDIMIENTO - ARTÍCULO 10 BIS LEY 7.395", ln=True, align='C')
+    pdf.cell(165, 10, "ACTA DE PROCEDIMIENTO - ARTÍCULO 10 BIS LEY 7.395", ln=True, align='C')
     pdf.ln(5)
     
-    # Construcción del párrafo con negritas
     pdf.set_font('Arial', '', 12)
     
-    # Redacción principal (Justificado manual mediante multi_cell para asegurar márgenes)
-    # Nota: Usamos un solo bloque para mantener el justificado perfecto solicitado.
-    texto_completo = (
-        f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
-        f"siendo las {hora_demora} hs, el funcionario policial actuante {actuante_ap.upper()} {actuante_nom.upper()} a cargo de la unidad móvil {movil} juntamente como refuerzo {refuerzo_ap.upper()} {refuerzo_nom.upper()}, "
-        f"ambos pertenecientes a {unidad} de la UR II Rosario, a los fines legales que diera a lugar se hace CONSTAR: Que de conformidad a lo establecido en el Art. 10 bis de la "
-        f"Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las {hora_demora} horas, desde calle {lugar.upper()} al cual manifiesta ser "
-        f"{apellido.upper()} {nombre.upper()}, DNI {dni}, de nacionalidad {nacionalidad.upper()}, domicilio en la calle {domicilio.upper()} de esta ciudad, hijo de {padres.upper()}, "
-        f"fecha de nacimiento {nacimiento} contando con {edad} años de edad. Adoptándose esta medida por el motivo de que ante la presencia policial: {motivo_final.upper()}."
-    )
-    
-    pdf.multi_cell(145, 9, texto_completo, align='J')
+    # Texto unificado para mantener el justificado Arial 12 Interlineado 1.5
+    intro_txt = (f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
+                 f"siendo las {hora_demora} hs, el funcionario policial actuante {actuante_ap.upper()} {actuante_nom.upper()} a cargo de la unidad móvil {movil} juntamente como refuerzo {refuerzo_ap.upper()} {refuerzo_nom.upper()}, "
+                 f"ambos pertenecientes a {unidad} de la UR II Rosario, a los fines legales que diera a lugar se hace CONSTAR: Que de conformidad a lo establecido en el Art. 10 bis de la "
+                 f"Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las {hora_demora} horas, desde calle {lugar.upper()} al cual manifiesta ser "
+                 f"{apellido.upper()} {nombre.upper()}, DNI {dni}, de nacionalidad {nacionalidad.upper()}, domicilio en la calle {domicilio.upper()} de esta ciudad, hijo de {padres.upper()}, "
+                 f"fecha de nacimiento {nacimiento} contando con {edad} años de edad. Adoptándose esta medida por el motivo de que ante la presencia policial: {motivo_final.upper()}.")
+
+    pdf.multi_cell(165, 9, intro_txt, align='J')
     pdf.ln(4)
 
     legal_text = ("Razón para lo cual y para la constancia de su identidad con el registro policial en los términos y alcances del Art. 10 Bis Ley 7395/75, introducida por Ley 11.516/97 y Resol. 0745/16. "
@@ -116,27 +105,27 @@ def generar_pdf_espejo():
                   "hasta constatar su identificación con el registro policial, sin que esta supere las SEIS (6) HORAS corridas contadas desde el inicio de la medida; c) Que en ningún momento ha de ser incomunicado; "
                   "d) Que tiene derecho a efectuar una llamada telefónica tendiente a plantear su situación y a fin de colaborar en su individualización e identidad personal; e) Que en caso de ser trasladado a dependencia "
                   "policial no será alojado con detenidos por delitos o contravenciones; f) Que se procede a labrar acta ad-hoc con testigos del procedimiento. Siendo estos los llamados: " + testigo_datos.upper() + ".")
-    pdf.multi_cell(145, 9, legal_text, align='J')
+    pdf.multi_cell(165, 9, legal_text, align='J')
     pdf.ln(4)
     
     pdf.set_font('Arial', 'B', 12)
-    pdf.multi_cell(145, 9, f"REQUISA: {requisa.upper()}", border=1, align='J')
-    pdf.multi_cell(145, 9, f"SECUESTRO EN DEPÓSITO: {secuestro.upper()}", border=1, align='J')
+    pdf.multi_cell(165, 9, f"REQUISA: {requisa.upper()}", border=1, align='J')
+    pdf.multi_cell(165, 9, f"SECUESTRO EN DEPÓSITO: {secuestro.upper()}", border=1, align='J')
     pdf.set_font('Arial', '', 12)
     pdf.ln(4)
     
-    pdf.multi_cell(145, 9, f"{estado_fisico}", align='J')
+    pdf.multi_cell(165, 9, f"Se deja constancia que el demorado {estado_fisico.lower()}", align='J')
     pdf.ln(4)
     
-    pdf.multi_cell(145, 9, f"Se hace constar que se labra la presente en recibiendo de conformidad {of_recibe.upper()} en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual firman los testigos, demorado y el personal actuante para su debida constancia.", align='J')
+    pdf.multi_cell(165, 9, f"Se hace constar que se labra la presente en recibiendo de conformidad {of_recibe.upper()} en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual firman los testigos, demorado y el personal actuante para su debida constancia.", align='J')
     
     pdf.ln(10)
     pdf.set_font('Arial', 'B', 12)
-    pdf.cell(145, 10, "HORA DE CESE: _________ hs. :-", ln=True)
+    pdf.cell(165, 10, "HORA DE CESE: _________ hs. :-", ln=True)
 
     # Firmas
     pdf.ln(15)
-    w = 145/3
+    w = 165/3
     pdf.set_font('Arial', 'B', 9)
     pdf.cell(w, 5, "________________", 0, 0, 'C')
     pdf.cell(w, 5, "________________", 0, 0, 'C')
@@ -147,7 +136,8 @@ def generar_pdf_espejo():
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- PARTE WHATSAPP ---
+# --- PARTE WHATSAPP CORREGIDA ---
+# Aquí se asocian las variables dinámicamente
 resumen_wa = f"""*{unidad} - {tercio}*
 *PARTE DEMORA ART 10 BIS*
 
@@ -166,7 +156,7 @@ resumen_wa = f"""*{unidad} - {tercio}*
 *DNI:* {dni}
 *DOMICILIO:* {domicilio.upper()}.-
 
-*ENTREGADO EN CRIA:* {jurisdiccion.upper()}, Sin lesiones visibles y no refieren dolencias.-
+*ENTREGADO EN CRIA:* {jurisdiccion.upper()}, {estado_fisico}.-
 
 *Recibe:* {of_recibe}.-
 
