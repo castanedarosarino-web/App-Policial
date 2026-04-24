@@ -3,7 +3,7 @@ from fpdf import FPDF
 from datetime import datetime
 
 # Configuración de la App
-st.set_page_config(page_title="ACTA DE DEMORADO 10 BIS", page_icon="👮")
+st.set_page_config(page_title="ACTA DE DEMORA ART. 10 BIS", page_icon="👮")
 
 # Estilos personalizados
 st.markdown("""
