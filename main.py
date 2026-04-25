@@ -3,7 +3,7 @@ from fpdf import FPDF
 from datetime import datetime
 
 # --- CONFIGURACIÓN DE LA APP ---
-st.set_page_config(page_title="ACTA  DE DEMORA 10 BIS creado por Sub Crio Castañeda JUan", page_icon="👮", layout="wide")
+st.set_page_config(page_title="SVI - ACTA 10 BIS", page_icon="👮", layout="wide")
 
 # --- INICIALIZACIÓN DE MEMORIA ---
 campos_base = {
@@ -93,8 +93,17 @@ with tab4:
         pdf.set_font('Arial', 'B', 12)
         pdf.cell(160, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
         pdf.ln(5)
+
+        # Para lograr el efecto de negritas intercaladas y JUSTIFICADO, 
+        # FPDF no permite hacerlo fácilmente con un solo bloque si hay cambios de estilo.
+        # La solución estándar es usar MultiCell con un solo estilo o construir el párrafo.
+        # Dado que solicitaste negritas específicas, mantendremos la fuente Arial 11.
         
         pdf.set_font('Arial', '', 11)
+        
+        # Redacción unificada para MultiCell Justificado
+        # Nota: MultiCell aplica un solo estilo a todo el bloque. 
+        # Para mantener el justificado perfecto, el bloque se imprime así:
         
         cuerpo = (
             f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
@@ -116,7 +125,7 @@ with tab4:
         )
 
         # Imprimimos con alineación 'J' (Justified)
-        pdf.multi_cell(160, 7, cuerpo.encode('latin-1', 'replace').decode('latin-1'), align='J')
+        pdf.multi_cell(160, 7, cuerpo, align='J')
 
         pdf.ln(15)
         pdf.set_font('Arial', 'B', 11)
