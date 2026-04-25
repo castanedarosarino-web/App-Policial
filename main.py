@@ -1,10 +1,6 @@
 import streamlit as st
-from fpdf import FPDF, HTMLMixin
+from fpdf import FPDF
 from datetime import datetime
-
-# --- CLASE ESPECIAL QUE PERMITE HTML (NEGRITAS + JUSTIFICADO) ---
-class PDF(FPDF, HTMLMixin):
-    pass
 
 # --- CONFIGURACIÓN DE LA APP ---
 st.set_page_config(page_title="SVI - ACTA 10 BIS", page_icon="👮", layout="wide")
@@ -28,7 +24,7 @@ for clave, valor in campos_base.items():
 if 'historial' not in st.session_state:
     st.session_state.historial = []
 
-# --- INTERFAZ DE USUARIO ---
+# --- INTERFAZ ---
 st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 Testigo/Requisa", "✍️ Cierre y WhatsApp", "🗂️ Historial"])
@@ -88,21 +84,20 @@ with tab4:
 
     # --- FUNCIÓN GENERADORA DE PDF ---
     def generar_pdf():
-        pdf = PDF()
+        pdf = FPDF()
         pdf.set_margins(left=30, top=30, right=20)
         pdf.add_page()
         ahora = datetime.now()
         meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
         
-        pdf.set_font('Arial', 'B', 12)
+        pdf.set_font('helvetica', 'B', 12)
         pdf.cell(160, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
         pdf.ln(5)
 
-        pdf.set_font('Arial', '', 11)
+        pdf.set_font('helvetica', '', 11)
         
-        # Usamos etiquetas <b> para negritas. El <p align="justify"> hace la magia del margen derecho.
+        # Redacción con etiquetas <b> para fpdf2
         texto_html = (
-            f'<p align="justify">'
             f'En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, '
             f'siendo las <b>{st.session_state.hora_demora} hs</b>, el funcionario policial actuante <b>{st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()}</b> '
             f'a cargo de la unidad móvil {st.session_state.movil} juntamente con el refuerzo <b>{st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}</b>, '
@@ -119,19 +114,20 @@ with tab4:
             f'Se deja constancia que el demorado {st.session_state.estado_fisico}. Se hace constar que se labra la presente en recibiendo de conformidad '
             f'<b>{st.session_state.of_recibe.upper()}</b> en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual '
             f'firman los testigos, demorado y el personal actuante para su debida constancia.'
-            f'</p>'
         )
 
-        pdf.write_html(texto_html)
+        # fpdf2 maneja el justificado y el HTML de forma mucho más robusta
+        pdf.write_html(texto_html, textAlign='J')
+        
         pdf.ln(15)
-        pdf.set_font('Arial', 'B', 11)
+        pdf.set_font('helvetica', 'B', 11)
         pdf.cell(160, 10, "HORA DE CESE: __________ hs.", ln=True)
-        return pdf.output(dest='S').encode('latin-1')
+        return pdf.output()
 
     # --- BOTONES ---
     col_pdf, col_hist = st.columns(2)
     with col_pdf:
-        st.download_button("📄 DESCARGAR PDF FINAL", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
+        st.download_button("📄 DESCARGAR PDF", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
     with col_hist:
         if st.button("💾 GUARDAR EN HISTORIAL"):
             reg = {clave: st.session_state[clave] for clave in campos_base.keys()}
@@ -139,7 +135,7 @@ with tab4:
             st.session_state.historial.append(reg)
             st.success("Guardado.")
 
-    # --- PARTE DE WHATSAPP ---
+    # --- WHATSAPP ---
     st.subheader("📲 Parte para WhatsApp")
     res_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
 *HORA:* {st.session_state.hora_demora} hs.
