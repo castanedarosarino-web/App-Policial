@@ -1,22 +1,10 @@
 import streamlit as st
-from fpdf import FPDF
+from fpdf import FPDF, HTMLMixin
 from datetime import datetime
-import re
 
-# --- CLASE ESPECIAL PARA NEGRITAS + JUSTIFICADO ---
-class PDF_Justificado(FPDF):
-    def write_justified_with_bold(self, text, w, h):
-        # Divide el texto en partes normales y negritas usando <b>
-        parts = re.split(r'(<b>.*?</b>)', text)
-        full_text_clean = text.replace('<b>', '').replace('</b>', '')
-        
-        # Guardamos la posición inicial
-        start_x = self.get_x()
-        
-        # Para lograr el justificado real con estilos mezclados en FPDF estándar
-        # la solución más estable es usar el multi_cell original.
-        # Como FPDF base no lo hace nativo, forzamos el renderizado:
-        self.multi_cell(w, h, full_text_clean, align='J')
+# --- CLASE ESPECIAL QUE PERMITE HTML (NEGRITAS + JUSTIFICADO) ---
+class PDF(FPDF, HTMLMixin):
+    pass
 
 # --- CONFIGURACIÓN DE LA APP ---
 st.set_page_config(page_title="SVI - ACTA 10 BIS", page_icon="👮", layout="wide")
@@ -40,7 +28,7 @@ for clave, valor in campos_base.items():
 if 'historial' not in st.session_state:
     st.session_state.historial = []
 
-# --- INTERFAZ ---
+# --- INTERFAZ DE USUARIO ---
 st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 Testigo/Requisa", "✍️ Cierre y WhatsApp", "🗂️ Historial"])
@@ -98,9 +86,9 @@ with tab4:
 
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
 
-    # --- GENERADOR DE PDF ---
+    # --- FUNCIÓN GENERADORA DE PDF ---
     def generar_pdf():
-        pdf = FPDF()
+        pdf = PDF()
         pdf.set_margins(left=30, top=30, right=20)
         pdf.add_page()
         ahora = datetime.now()
@@ -110,33 +98,31 @@ with tab4:
         pdf.cell(160, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
         pdf.ln(5)
 
-        # REDACCIÓN EN MAYÚSCULAS PARA SIMULAR LAS NEGRITAS EN FPDF ESTÁNDAR JUSTIFICADO
-        # Esta es la solución más limpia: resaltamos con MAYÚSCULAS lo importante
-        # para que el JUSTIFICADO de MultiCell funcione perfecto.
+        pdf.set_font('Arial', '', 11)
         
-        cuerpo = (
-            f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
-            f"siendo las {st.session_state.hora_demora} HS, el funcionario policial actuante {st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()} "
-            f"a cargo de la unidad móvil {st.session_state.movil} juntamente con el refuerzo {st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}, "
-            f"ambos pertenecientes a {st.session_state.unidad} de la UR II Rosario, SE HACE CONSTAR: Que de conformidad a lo establecido en el "
-            f"ART. 10 BIS DE LA LEY ORGÁNICA DE POLICIAL DE LA PROVINCIA DE SANTA FE N° 7395 se procede a DEMORAR a las {st.session_state.hora_demora} horas, "
-            f"desde calle {st.session_state.lugar.upper()} al cual manifiesta ser {st.session_state.apellido.upper()} {st.session_state.nombre.upper()}, "
-            f"DNI {st.session_state.dni}, de nacionalidad {st.session_state.nacionalidad.upper()}, estado civil {st.session_state.est_civil}, nacido el {st.session_state.nacimiento}, "
-            f"contando con {st.session_state.edad} años de edad, hijo de {st.session_state.padres.upper()}, con domicilio real en la calle {st.session_state.domicilio.upper()} "
-            f"de esta ciudad. Adoptándose esta medida por el motivo de que ante la presencia policial: {st.session_state.motivo_unico.upper()}. "
-            f"A continuación se le imponen al demorado sus derechos y garantías: a) será trasladado a la dependencia; B) LA DEMORA NO SUPERARÁ LAS SEIS (6) HORAS; "
-            f"c) no será incomunicado; d) tiene derecho a realizar una llamada telefónica; e) no será alojado con detenidos comunes; f) se labra la presente acta ante los testigos: "
-            f"{st.session_state.testigo_datos.upper()}. Se hace constar que de la requisa efectuada sobre el demorado la misma arrojó resultado {st.session_state.requisa.upper()}. "
-            f"Es dable hacer mención que se le secuestra en carácter de depósito para su resguardo: {st.session_state.secuestro.upper()}. "
-            f"Se deja constancia que el demorado {st.session_state.estado_fisico}. Se hace constar que se labra la presente en recibiendo de conformidad "
-            f"{st.session_state.of_recibe.upper()} en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual "
-            f"firman los testigos, demorado y el personal actuante para su debida constancia."
+        # Usamos etiquetas <b> para negritas. El <p align="justify"> hace la magia del margen derecho.
+        texto_html = (
+            f'<p align="justify">'
+            f'En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, '
+            f'siendo las <b>{st.session_state.hora_demora} hs</b>, el funcionario policial actuante <b>{st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()}</b> '
+            f'a cargo de la unidad móvil {st.session_state.movil} juntamente con el refuerzo <b>{st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}</b>, '
+            f'ambos pertenecientes a {st.session_state.unidad} de la UR II Rosario, <b>SE HACE CONSTAR:</b> Que de conformidad a lo establecido en el '
+            f'<b>Art. 10 bis de la Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395</b> se procede a <b>DEMORAR</b> a las {st.session_state.hora_demora} horas, '
+            f'desde calle {st.session_state.lugar.upper()} al cual manifiesta ser <b>{st.session_state.apellido.upper()} {st.session_state.nombre.upper()}, '
+            f'DNI {st.session_state.dni}</b>, de nacionalidad {st.session_state.nacionalidad.upper()}, estado civil {st.session_state.est_civil}, nacido el {st.session_state.nacimiento}, '
+            f'contando con {st.session_state.edad} años de edad, hijo de {st.session_state.padres.upper()}, con domicilio real en la calle {st.session_state.domicilio.upper()} '
+            f'de esta ciudad. Adoptándose esta medida por el motivo de que ante la presencia policial: {st.session_state.motivo_unico.upper()}. '
+            f'A continuación se le imponen al demorado sus derechos y garantías: a) será trasladado a la dependencia; <b>b) la demora no superará las SEIS (6) HORAS;</b> '
+            f'c) no será incomunicado; d) tiene derecho a realizar una llamada telefónica; e) no será alojado con detenidos comunes; f) se labra la presente acta ante los testigos: '
+            f'{st.session_state.testigo_datos.upper()}. Se hace constar que de la requisa efectuada sobre el demorado la misma arrojó resultado {st.session_state.requisa.upper()}. '
+            f'Es dable hacer mención que se le secuestra en carácter de depósito para su resguardo: <b>{st.session_state.secuestro.upper()}</b>. '
+            f'Se deja constancia que el demorado {st.session_state.estado_fisico}. Se hace constar que se labra la presente en recibiendo de conformidad '
+            f'<b>{st.session_state.of_recibe.upper()}</b> en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual '
+            f'firman los testigos, demorado y el personal actuante para su debida constancia.'
+            f'</p>'
         )
 
-        pdf.set_font('Arial', '', 11)
-        # MultiCell con alineación 'J' es lo que garantiza el margen derecho recto
-        pdf.multi_cell(160, 7, cuerpo, align='J')
-
+        pdf.write_html(texto_html)
         pdf.ln(15)
         pdf.set_font('Arial', 'B', 11)
         pdf.cell(160, 10, "HORA DE CESE: __________ hs.", ln=True)
@@ -145,7 +131,7 @@ with tab4:
     # --- BOTONES ---
     col_pdf, col_hist = st.columns(2)
     with col_pdf:
-        st.download_button("📄 DESCARGAR PDF JUSTIFICADO", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
+        st.download_button("📄 DESCARGAR PDF FINAL", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
     with col_hist:
         if st.button("💾 GUARDAR EN HISTORIAL"):
             reg = {clave: st.session_state[clave] for clave in campos_base.keys()}
