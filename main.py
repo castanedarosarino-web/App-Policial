@@ -1,6 +1,10 @@
 import streamlit as st
-from fpdf import FPDF
+from fpdf import FPDF, HTMLMixin
 from datetime import datetime
+
+# Clase especial para permitir HTML (Negritas + Justificado)
+class PDF(FPDF, HTMLMixin):
+    pass
 
 # --- CONFIGURACIÓN DE LA APP ---
 st.set_page_config(page_title="SVI - ACTA 10 BIS", page_icon="👮", layout="wide")
@@ -14,7 +18,7 @@ campos_base = {
     'actuante_ap': "", 'actuante_nom': "", 'refuerzo_ap': "", 'refuerzo_nom': "",
     'testigo_datos': "", 'requisa': "palpado preventivo sobre sus prendas no hallando elementos de peligrosidad", 
     'secuestro': "pertenencias personales", 'estado_fisico': "no presenta lesiones visibles, golpes ni manifiesta dolencias al momento de ingresar a la dependencia",
-    'motivo_unico': "", 'of_recibe': "SUBOFICIAL RODRIGUEZ (M)", 'redacta_wa': ""
+    'motivo_unico': "", 'of_recibe': "SUBOFICIAL RODRIGUEZ (M)"
 }
 
 for clave, valor in campos_base.items():
@@ -24,7 +28,7 @@ for clave, valor in campos_base.items():
 if 'historial' not in st.session_state:
     st.session_state.historial = []
 
-# --- INTERFAZ DE USUARIO ---
+# --- INTERFAZ ---
 st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 Testigo/Requisa", "✍️ Cierre y WhatsApp", "🗂️ Historial"])
@@ -36,7 +40,6 @@ with tab1:
     st.session_state.unidad = c1.text_input("Especifique Unidad", value=st.session_state.unidad) if u_sel == "OTRO" else u_sel
     st.session_state.tercio = c2.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
     st.session_state.movil = st.text_input("Móvil / Legajo", value=st.session_state.movil)
-    st.session_state.jurisdiccion = st.text_input("Jurisdicción de entrega", value=st.session_state.jurisdiccion)
     st.session_state.lugar = st.text_input("Lugar del procedimiento", value=st.session_state.lugar)
     st.session_state.hora_demora = st.text_input("Hora de inicio", value=st.session_state.hora_demora)
     st.session_state.acta_nro = st.text_input("Acta Nº", value=st.session_state.acta_nro)
@@ -46,12 +49,12 @@ with tab2:
     st.session_state.apellido = ca.text_input("Apellido/s", value=st.session_state.apellido)
     st.session_state.nombre = cb.text_input("Nombre/s", value=st.session_state.nombre)
     st.session_state.dni = st.text_input("DNI", value=st.session_state.dni)
+    st.session_state.nacimiento = st.text_input("Fecha de Nacimiento", value=st.session_state.nacimiento)
+    st.session_state.padres = st.text_input("Hijo de (Filiación)", value=st.session_state.padres)
+    st.session_state.domicilio = st.text_input("Domicilio Real", value=st.session_state.domicilio)
     st.session_state.nacionalidad = st.text_input("Nacionalidad", value=st.session_state.nacionalidad)
     st.session_state.est_civil = st.selectbox("Estado Civil", ["SOLTERO/A", "CASADO/A", "DIVORCIADO/A", "CONCUBINATO"])
     st.session_state.edad = st.text_input("Edad", value=st.session_state.edad)
-    st.session_state.nacimiento = st.text_input("Fecha de Nacimiento", value=st.session_state.nacimiento)
-    st.session_state.domicilio = st.text_input("Domicilio Real", value=st.session_state.domicilio)
-    st.session_state.padres = st.text_input("Hijo de (Filiación)", value=st.session_state.padres)
 
 with tab3:
     st.session_state.actuante_ap = st.text_input("Ap. Actuante", value=st.session_state.actuante_ap)
@@ -68,23 +71,12 @@ with tab4:
         "presenta lesiones de vieja data y no requirieron atención médica",
         "presenta lesiones que motivaron su traslado previo a un centro de salud"
     ])
-
-    op_motivos = [
-        "EL INDIVIDUO CAMBIA BRUSCAMENTE SU SENTIDO DE MARCHA AL NOTAR LA PRESENCIA POLICIAL E INTENTA EVITAR CONTACTO, Y AL REQUERIRLE SU IDENTIFICACIÓN, MANIFIESTA NO POSEER DNI EN SU PODER NI RECORDAR CON EXACTITUD SU NÚMERO.",
-        "SE DETECTA AL MASCULINO OCULTÁNDOSE DE LA VISUAL DE LA PREVENCIÓN Y, AL REQUERIRLE SU IDENTIFICACIÓN, MANIFIESTA NO POSEER DNI EN SU PODER NI RECORDAR CON EXACTITUD SU NÚMERO.",
-        "OTRO (Manual)"
-    ]
-    seleccion = st.selectbox("Motivo observado:", op_motivos)
-    if seleccion == "OTRO (Manual)":
-        st.session_state.motivo_unico = st.text_area("Redacción del motivo:", value=st.session_state.motivo_unico)
-    else:
-        st.session_state.motivo_unico = seleccion
-
+    st.session_state.motivo_unico = st.text_area("Redacción del motivo:", value=st.session_state.motivo_unico)
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
 
-    # --- GENERADOR DE PDF CON NEGRITAS + JUSTIFICADO ---
+    # --- GENERADOR DE PDF ---
     def generar_pdf():
-        pdf = FPDF()
+        pdf = PDF()
         pdf.set_margins(left=30, top=30, right=20)
         pdf.add_page()
         ahora = datetime.now()
@@ -94,12 +86,10 @@ with tab4:
         pdf.cell(160, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
         pdf.ln(5)
 
-        # Usamos write_html para permitir negritas internas manteniendo el bloque
         pdf.set_font('Arial', '', 11)
         
-        # Armamos el texto con etiquetas <b> para las negritas
         texto_html = (
-            f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
+            f"<p align=\"justify\">En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
             f"siendo las <b>{st.session_state.hora_demora} hs</b>, el funcionario policial actuante <b>{st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()}</b> "
             f"a cargo de la unidad móvil {st.session_state.movil} juntamente con el refuerzo <b>{st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}</b>, "
             f"ambos pertenecientes a {st.session_state.unidad} de la UR II Rosario, <b>se hace CONSTAR:</b> Que de conformidad a lo establecido en el "
@@ -114,19 +104,16 @@ with tab4:
             f"Es dable hacer mención que se le secuestra en carácter de depósito para su resguardo: <b>{st.session_state.secuestro.upper()}</b>. "
             f"Se deja constancia que el demorado {st.session_state.estado_fisico}. Se hace constar que se labra la presente en recibiendo de conformidad "
             f"<b>{st.session_state.of_recibe.upper()}</b> en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual "
-            f"firman los testigos, demorado y el personal actuante para su debida constancia."
+            f"firman los testigos, demorado y el personal actuante para su debida constancia.</p>"
         )
 
-        # write_html justifica automáticamente el texto si se configura correctamente
-        pdf.write_html(f'<p align="justify">{texto_html}</p>')
-
+        pdf.write_html(texto_html)
         pdf.ln(15)
         pdf.set_font('Arial', 'B', 11)
         pdf.cell(160, 10, "HORA DE CESE: __________ hs.", ln=True)
-        return pdf.output(dest='S').encode('latin-1')
+        return pdf.output(dest='S') # En fpdf2 no hace falta .encode('latin-1')
 
-    # --- BOTONES Y WHATSAPP IGUAL QUE ANTES ---
-    st.download_button("📄 DESCARGAR PDF JUSTIFICADO + NEGRITAS", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
+    st.download_button("📄 DESCARGAR PDF FINAL", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
     
     st.subheader("📲 Parte para WhatsApp")
     res_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
@@ -134,8 +121,8 @@ with tab4:
 *LUGAR:* {st.session_state.lugar.upper()}
 *👤 DEMORADO:* **{st.session_state.apellido.upper()} {st.session_state.nombre.upper()}**
 *DNI:* **{st.session_state.dni}**
+*FECHA NAC:* **{st.session_state.nacimiento}**
 *HIJO DE:* **{st.session_state.padres.upper()}**
-*ESTADO:* {st.session_state.estado_fisico}
 *RECIBE:* **{st.session_state.of_recibe.upper()}**"""
     st.code(res_wa)
 
