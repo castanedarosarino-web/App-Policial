@@ -3,7 +3,7 @@ from fpdf import FPDF
 from datetime import datetime
 
 # --- CONFIGURACIÓN DE LA APP ---
-st.set_page_config(page_title="SVI - ACTA 10 BIS", page_icon="👮", layout="wide")
+st.set_page_config(page_title="ACTA DE DEMORA 10 BIS,creado por Sub Crio Castañeda", page_icon="👮", layout="wide")
 
 # --- INICIALIZACIÓN DE MEMORIA ---
 campos_base = {
