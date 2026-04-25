@@ -25,7 +25,7 @@ if 'historial' not in st.session_state:
     st.session_state.historial = []
 
 # --- INTERFAZ DE USUARIO ---
-st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395")
+st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395,creado por Sub Crio Castañeda")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 Testigo/Requisa", "✍️ Cierre y WhatsApp", "🗂️ Historial"])
 
