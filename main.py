@@ -2,7 +2,7 @@ import streamlit as st
 from fpdf import FPDF
 import datetime
 
-# --- 1. CONFIGURACIÓN DE JURISDICCIONES ---
+# --- 1. CONFIGURACIÓN DE JURISDICCIONES (Inspección 8va) ---
 JURISDICCIONES = {
     "Pérez": {"tipo": "Ciudad", "depto": "Rosario"},
     "Funes": {"tipo": "Ciudad", "depto": "Rosario"},
@@ -12,63 +12,97 @@ JURISDICCIONES = {
 }
 
 def main():
-    st.title("Sistema de Actas Art. 10 Bis")
+    # Configuración de página para móviles
+    st.set_page_config(page_title="App Policial - Art. 10 Bis", layout="centered")
     
-    # --- 2. ENTRADA DE DATOS ---
-    col1, col2 = st.columns(2)
-    with col1:
-        ciudad_actuante = st.selectbox("Lugar de la demora:", list(JURISDICCIONES.keys()))
-        apellido = st.text_input("Apellido del demorado:").upper()
-    with col2:
-        dni = st.text_input("DNI:")
-        domicilio_ciudad = st.text_input("Ciudad/Localidad del demorado:")
+    st.title("⚖️ Acta de Demora Art. 10 Bis")
+    st.info("Configurado para la Inspección 8va (Pérez, Funes, Soldini, Zavalla)")
 
-    # Lógica de redacción automática
-    info = JURISDICCIONES[ciudad_actuante]
-    prefijo = "la Ciudad" if info["tipo"] == "Ciudad" else "la Localidad"
-    
-    # --- 3. PROCESAMIENTO ---
-    if st.button("Generar Acta y Parte"):
+    # --- 2. ENTRADA DE DATOS ---
+    with st.container():
+        col1, col2 = st.columns(2)
+        with col1:
+            ciudad_actuante = st.selectbox("Lugar de la demora (Actuante):", list(JURISDICCIONES.keys()))
+            apellido = st.text_input("Apellido del demorado:").upper()
+        with col2:
+            dni = st.text_input("DNI del demorado:")
+            ciudad_demorado = st.text_input("Ciudad/Localidad de residencia del demorado:").upper()
+
+    # Lógica de redacción automática según el rango del lugar
+    info_juris = JURISDICCIONES[ciudad_actuante]
+    prefijo_actuante = "la Ciudad" if info_juris["tipo"] == "Ciudad" else "la Localidad"
+
+    # --- 3. PROCESAMIENTO Y GENERACIÓN ---
+    if st.button("GENERAR ACTA Y PARTE", use_container_width=True):
         if apellido and dni:
             try:
-                # Crear el PDF
+                # Inicializar PDF
                 pdf = FPDF()
                 pdf.add_page()
-                pdf.set_font("Arial", 'B', 16)
-                pdf.cell(200, 10, txt="ACTA DE DEMORA ART. 10 BIS", ln=True, align='C')
+                pdf.set_font("Arial", 'B', 14)
                 
+                # Título del acta
+                pdf.cell(0, 10, txt="ACTA DE DEMORA - ARTICULO 10 BIS LEY 11.516", ln=True, align='C')
+                pdf.ln(5)
+                
+                # Cuerpo del Acta
                 pdf.set_font("Arial", size=12)
-                fecha_texto = datetime.datetime.now().strftime('%d/%m/%Y a las %H:%M')
-                cuerpo = f"En {prefijo} de {ciudad_actuante}, Departamento {info['depto']}, siendo fecha {fecha_texto}..."
-                pdf.multi_cell(0, 10, txt=cuerpo)
+                ahora = datetime.datetime.now()
+                fecha_hoy = ahora.strftime('%d/%m/%Y')
+                hora_hoy = ahora.strftime('%H:%M')
                 
-                # --- SOLUCIÓN AL ERROR DE SALIDA ---
-                # Usamos bytearray para asegurar compatibilidad total
-                pdf_bytes = pdf.output(dest='S')
-                if isinstance(pdf_bytes, str):
-                    pdf_bytes = pdf_bytes.encode('latin-1')
+                # Determinamos la redacción del domicilio del demorado
+                texto_domicilio = f"domiciliado en esta ciudad" if ciudad_demorado.lower() == ciudad_actuante.lower() else f"domiciliado en la localidad de {ciudad_demorado}"
+
+                texto_cuerpo = (
+                    f"En {prefijo_actuante} de {ciudad_actuante}, Departamento {info_juris['depto']}, "
+                    f"Provincia de Santa Fe, a los {ahora.day} días del mes de {ahora.strftime('%B')} "
+                    f"del año {ahora.year}, siendo las {hora_hoy} horas, se procede a la demora de "
+                    f"quien dice llamarse {apellido}, DNI {dni}, {texto_domicilio}..."
+                )
                 
-                # --- 4. NOMBRE DE ARCHIVO Y DESCARGA ---
-                hora_proc = datetime.datetime.now().strftime("%H%M")
-                nombre_archivo = f"10Bis_{apellido}_{dni}_{hora_proc}.pdf"
+                pdf.multi_cell(0, 10, txt=texto_cuerpo)
+                
+                # --- SOLUCIÓN BINARIA (Bytes puros para Streamlit) ---
+                pdf_output = pdf.output(dest='S')
+                if isinstance(pdf_output, str):
+                    pdf_bytes = bytes(pdf_output, 'latin-1')
+                else:
+                    pdf_bytes = bytes(pdf_output)
+                
+                # --- 4. NOMBRE DE ARCHIVO DINÁMICO ---
+                # Esto es lo que permite encontrarlo rápido en WhatsApp
+                nombre_archivo = f"10Bis_{apellido}_{dni}_{ahora.strftime('%H%M')}.pdf"
 
-                st.success(f"✅ Acta de {apellido} generada")
+                st.success(f"✅ Acta de {apellido} lista para enviar")
 
+                # Botón de Descarga
                 st.download_button(
                     label="📥 DESCARGAR PDF PARA WHATSAPP",
                     data=pdf_bytes,
                     file_name=nombre_archivo,
-                    mime="application/pdf"
+                    mime="application/pdf",
+                    use_container_width=True
                 )
 
-                # Parte de texto
-                parte_wa = f"*PARTE PREVENTIVO*\n*Demora Art. 10 Bis*\n*Lugar:* {ciudad_actuante}\n*Causante:* {apellido}, DNI {dni}"
-                st.text_area("Copiar para WhatsApp:", value=parte_wa, height=100)
+                # Parte para copiar y pegar
+                st.divider()
+                st.subheader("Parte de WhatsApp")
+                parte_wa = (
+                    f"*PARTE PREVENTIVO*\n"
+                    f"*Procedimiento:* Demora Art. 10 Bis\n"
+                    f"*Lugar:* {ciudad_actuante} ({prefijo_actuante})\n"
+                    f"*Causante:* {apellido}\n"
+                    f"*DNI:* {dni}\n"
+                    f"*Fecha/Hora:* {fecha_hoy} - {hora_hoy}hs"
+                )
+                st.text_area("Copiá este texto:", value=parte_wa, height=150)
+                st.info("💡 Consejo: Al tocar 'Adjuntar' en WhatsApp, buscá el archivo que empieza con el Apellido del demorado.")
 
             except Exception as e:
-                st.error(f"Error técnico al generar el archivo: {e}")
+                st.error(f"Error técnico: {e}")
         else:
-            st.error("Faltan datos críticos (Apellido o DNI).")
+            st.warning("⚠️ Falta completar Apellido o DNI para generar el documento.")
 
 if __name__ == "__main__":
     main()
