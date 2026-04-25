@@ -6,69 +6,68 @@ import io
 # --- CONFIGURACIÓN DE LA APP ---
 st.set_page_config(page_title="ACTA DE DEMORA ART 10 BIS LEY 7.395", page_icon="👮", layout="wide")
 
-# --- INICIALIZACIÓN DE MEMORIA ---
-if 'historial' not in st.session_state:
-    st.session_state.historial = []
+# --- INICIALIZACIÓN DE MEMORIA (SESSION STATE) ---
+# Esto asegura que el "espejo" funcione siempre
+campos_base = {
+    'unidad': "G.T.M.", 'tercio': "TERCIO ALPHA", 'movil': "12.116", 'jurisdiccion': "SUB 18",
+    'lugar': "", 'hora_demora': datetime.now().strftime('%H:%M'), 'acta_nro': "",
+    'apellido': "", 'nombre': "", 'dni': "", 'nacionalidad': "ARGENTINA",
+    'est_civil': "SOLTERO/A", 'edad': "", 'nacimiento': "", 'domicilio': "", 'padres': "",
+    'actuante_ap': "CASTAÑEDA", 'actuante_nom': "JUAN", 'refuerzo_ap': "", 'refuerzo_nom': "",
+    'testigo_datos': "SIENDO EL MISMO EL PERSONAL ACTUANTE ANTE LA URGENCIA Y FALTA DE COLABORACIÓN DE TERCEROS", 
+    'requisa': "palpado preventivo sobre sus prendas no hallando elementos de peligrosidad", 
+    'secuestro': "pertenencias personales", 
+    'estado_fisico': "no presenta lesiones visibles, golpes ni manifiesta dolencias al momento de ingresar a la dependencia",
+    'motivo_final': "", 'of_recibe': "SUBOFICIAL RODRIGUEZ (M)"
+}
 
-# --- FORMULARIO PRINCIPAL ---
+for clave, valor in campos_base.items():
+    if clave not in st.session_state:
+        st.session_state[clave] = valor
+
+# --- TÍTULO Y AUTORÍA ---
 st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395")
-st.subheader("Creado por: Sub Comisario CASTAÑEDA JUAN")
+st.markdown("### **Creado por: Sub Comisario CASTAÑEDA JUAN**")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 Testigo/Requisa", "📄 Generar y WhatsApp", "🗂️ Historial"])
+tab1, tab2, tab3, tab4 = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 Procedimiento", "📄 Salida y WhatsApp"])
 
 with tab1:
     col1, col2 = st.columns(2)
-    unidad = col1.selectbox("Unidad", ["G.T.M.", "C.R.E. ROSARIO", "B.O.U.", "P.A.T.", "OTRO"])
-    tercio = col2.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
-    movil = st.text_input("Móvil / Legajo", value="12.116")
-    jurisdiccion = st.text_input("Jurisdicción de entrega", value="SUB 18")
-    lugar = st.text_input("Lugar del procedimiento")
-    hora_demora = st.text_input("Hora de inicio", value=datetime.now().strftime('%H:%M'))
-    acta_nro = st.text_input("Acta Nº")
+    st.session_state.unidad = col1.selectbox("Unidad", ["G.T.M.", "C.R.E. ROSARIO", "B.O.U.", "P.A.T.", "OTRO"], index=0)
+    st.session_state.tercio = col2.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
+    st.session_state.movil = st.text_input("Móvil / Legajo", value=st.session_state.movil)
+    st.session_state.lugar = st.text_input("Lugar del procedimiento", value=st.session_state.lugar)
+    st.session_state.hora_demora = st.text_input("Hora de inicio", value=st.session_state.hora_demora)
+    st.session_state.acta_nro = st.text_input("Acta Nº", value=st.session_state.acta_nro)
 
 with tab2:
     ca, cb = st.columns(2)
-    apellido = ca.text_input("Apellido/s")
-    nombre = cb.text_input("Nombre/s")
-    dni = st.text_input("DNI")
-    nacionalidad = st.text_input("Nacionalidad", value="ARGENTINA")
-    est_civil = st.selectbox("Estado Civil", ["SOLTERO/A", "CASADO/A", "DIVORCIADO/A", "CONCUBINATO"])
-    edad = st.text_input("Edad")
-    nacimiento = st.text_input("Fecha de Nacimiento")
-    domicilio = st.text_input("Domicilio Real")
-    padres = st.text_input("Hijo de (Filiación)")
+    st.session_state.apellido = ca.text_input("Apellido/s", value=st.session_state.apellido)
+    st.session_state.nombre = cb.text_input("Nombre/s", value=st.session_state.nombre)
+    st.session_state.dni = st.text_input("DNI", value=st.session_state.dni)
+    st.session_state.domicilio = st.text_input("Domicilio Real", value=st.session_state.domicilio)
+    st.session_state.nacimiento = st.text_input("Fecha de Nacimiento", value=st.session_state.nacimiento)
+    st.session_state.padres = st.text_input("Filiación (Hijo de)", value=st.session_state.padres)
 
 with tab3:
-    actuante_ap = st.text_input("Ap. Actuante", value="CASTAÑEDA")
-    actuante_nom = st.text_input("Nom. Actuante", value="JUAN")
-    refuerzo_ap = st.text_input("Ap. Refuerzo")
-    refuerzo_nom = st.text_input("Nom. Refuerzo")
-    testigo_datos = st.text_area("Testigos", value="SIENDO EL MISMO EL PERSONAL ACTUANTE ANTE LA URGENCIA Y FALTA DE COLABORACIÓN DE TERCEROS")
-    requisa = st.text_area("Resultado de la Requisa", value="palpado preventivo sobre sus prendas no hallando elementos de peligrosidad")
-    secuestro = st.text_area("Elementos secuestrados", value="pertenencias personales")
-
-with tab4:
-    estado_fisico = st.selectbox("Estado físico:", [
-        "no presenta lesiones visibles, golpes ni manifiesta dolencias al momento de ingresar a la dependencia",
-        "presenta lesiones de vieja data y no requirieron atención médica",
-        "presenta lesiones que motivaron su traslado previo a un centro de salud"
-    ])
+    st.session_state.actuante_ap = st.text_input("Ap. Actuante", value=st.session_state.actuante_ap)
+    st.session_state.refuerzo_ap = st.text_input("Ap. Refuerzo", value=st.session_state.refuerzo_ap)
+    st.session_state.requisa = st.text_area("Resultado Requisa", value=st.session_state.requisa)
+    st.session_state.secuestro = st.text_area("Elementos secuestrados", value=st.session_state.secuestro)
     
-    motivo_opciones = [
+    motivo_sel = st.selectbox("Motivo observado:", [
         "EL INDIVIDUO CAMBIA BRUSCAMENTE SU SENTIDO DE MARCHA AL NOTAR LA PRESENCIA POLICIAL E INTENTA EVITAR CONTACTO, Y AL REQUERIRLE SU IDENTIFICACIÓN, MANIFIESTA NO POSEER DNI EN SU PODER NI RECORDAR CON EXACTITUD SU NÚMERO.",
         "SE DETECTA AL MASCULINO OCULTÁNDOSE DE LA VISUAL DE LA PREVENCIÓN Y, AL REQUERIRLE SU IDENTIFICACIÓN, MANIFIESTA NO POSEER DNI EN SU PODER NI RECORDAR CON EXACTITUD SU NÚMERO.",
         "OTRO (Manual)"
-    ]
-    motivo_sel = st.selectbox("Motivo observado:", motivo_opciones)
+    ])
     if motivo_sel == "OTRO (Manual)":
-        motivo_final = st.text_area("Redacción del motivo:")
+        st.session_state.motivo_final = st.text_area("Redacción personalizada:")
     else:
-        motivo_final = motivo_sel
+        st.session_state.motivo_final = motivo_sel
 
-    of_recibe = st.text_input("Oficial de Guardia que recibe", value="SUBOFICIAL RODRIGUEZ (M)")
-
-    # --- LÓGICA DE PDF ---
-    def generar_pdf():
+with tab4:
+    # --- MOTOR PDF CORREGIDO ---
+    def generar_pdf_bytes():
         pdf = FPDF()
         pdf.set_margins(left=30, top=30, right=20)
         pdf.add_page()
@@ -78,56 +77,54 @@ with tab4:
         pdf.set_font('Arial', 'B', 12)
         pdf.cell(160, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
         pdf.set_font('Arial', 'I', 8)
-        pdf.cell(160, 5, "Creado por: Sub Comisario CASTAÑEDA JUAN", ln=True, align='C')
+        pdf.cell(160, 5, "SVI - Creado por: Sub Comisario CASTAÑEDA JUAN", ln=True, align='C')
         pdf.ln(5)
         
         pdf.set_font('Arial', '', 11)
+        # Usamos st.session_state para que el PDF siempre tenga lo último escrito
         cuerpo = (
-            f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
-            f"siendo las {hora_demora} hs, el funcionario policial actuante {actuante_ap.upper()} {actuante_nom.upper()} "
-            f"a cargo de la unidad móvil {movil} juntamente con el refuerzo {refuerzo_ap.upper()} {refuerzo_nom.upper()}, "
-            f"ambos pertenecientes a {unidad} de la UR II Rosario, SE HACE CONSTAR: Que de conformidad a lo establecido en el "
-            f"Art. 10 bis de la Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las {hora_demora} horas, "
-            f"desde calle {lugar.upper()} al cual manifiesta ser {apellido.upper()} {nombre.upper()}, "
-            f"DNI {dni}, de nacionalidad {nacionalidad.upper()}, estado civil {est_civil}, nacido el {nacimiento}, "
-            f"contando con {edad} años de edad, hijo de {padres.upper()}, con domicilio real en la calle {domicilio.upper()} "
-            f"de esta ciudad. Adoptándose esta medida por el motivo de que ante la presencia policial: {motivo_final.upper()}. "
-            f"A continuación se le imponen al demorado sus derechos y garantías: a) será trasladado a la dependencia; b) la demora no superará las SEIS (6) HORAS; "
-            f"c) no será incomunicado; d) tiene derecho a realizar una llamada telefónica; e) no será alojado con detenidos comunes; f) se labra la presente acta ante los testigos: "
-            f"{testigo_datos.upper()}. Se hace constar que de la requisa efectuada sobre el demorado la misma arrojó resultado {requisa.upper()}. "
-            f"Es dable hacer mención que se le secuestra en carácter de depósito para su resguardo: {secuestro.upper()}. "
-            f"Se deja constancia que el demorado {estado_fisico}. Se hace constar que se labra la presente en recibiendo de conformidad "
-            f"{of_recibe.upper()} en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto."
+            f"En la ciudad de ROSARIO, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
+            f"siendo las {st.session_state.hora_demora} hs, el funcionario actuante {st.session_state.actuante_ap.upper()} "
+            f"con móvil {st.session_state.movil} y refuerzo {st.session_state.refuerzo_ap.upper()}, "
+            f"pertenecientes a {st.session_state.unidad}, SE HACE CONSTAR: Que bajo Art. 10 bis Ley 7395 "
+            f"se procede a DEMORAR a {st.session_state.apellido.upper()} {st.session_state.nombre.upper()}, DNI {st.session_state.dni}, "
+            f"con domicilio en {st.session_state.domicilio.upper()}. Motivo: {st.session_state.motivo_final.upper()}. "
+            f"Derechos: Traslado a dependencia, no exceder 6 horas, llamada telefónica. Requisa: {st.session_state.requisa.upper()}. "
+            f"Secuestro: {st.session_state.secuestro.upper()}. Estado físico: {st.session_state.estado_fisico.upper()}."
         )
         pdf.multi_cell(160, 7, cuerpo.encode('latin-1', 'replace').decode('latin-1'), align='J')
-        pdf.ln(15)
-        pdf.set_font('Arial', 'B', 11)
-        pdf.cell(160, 10, "HORA DE CESE: __________ hs.", ln=True)
-        return pdf.output(dest='S')
+        
+        # Retornamos como bytes para evitar el StreamlitAPIException
+        return pdf.output(dest='S').encode('latin-1')
+
+    # Botón de Descarga
+    if st.session_state.apellido:
+        btn_data = generar_pdf_bytes()
+        st.download_button(
+            label="📄 DESCARGAR ACTA PDF",
+            data=btn_data,
+            file_name=f"10Bis_{st.session_state.apellido}.pdf",
+            mime="application/pdf"
+        )
+    else:
+        st.warning("Complete el apellido para habilitar el PDF.")
 
     st.divider()
-    if apellido:
-        st.download_button("📄 DESCARGAR ACTA PDF", data=generar_pdf(), file_name=f"10Bis_{apellido}.pdf", mime="application/pdf")
     
-    # --- ESPEJO WHATSAPP ---
+    # --- ESPEJO WHATSAPP AUTOMÁTICO ---
     st.subheader("📲 Espejo para WhatsApp")
-    res_wa = f"""*🚔 {unidad}* | *ACTA 10 BIS*
-*HORA:* {hora_demora} hs.
-*LUGAR:* {lugar.upper()}
+    res_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
+*HORA:* {st.session_state.hora_demora} hs.
+*LUGAR:* {st.session_state.lugar.upper()}
 
 *👤 DEMORADO:*
-*IDENTIDAD:* **{apellido.upper()} {nombre.upper()}**
-*DNI:* **{dni}**
-*DOMICILIO:* {domicilio.upper()}
+*IDENTIDAD:* **{st.session_state.apellido.upper()} {st.session_state.nombre.upper()}**
+*DNI:* **{st.session_state.dni}**
 
 *📝 PROCEDIMIENTO:*
-*MOTIVO:* {motivo_final.upper()}
-*SECUESTRO:* **{secuestro.upper()}**
-*RECIBE:* **{of_recibe.upper()}**
-*Acta N• {acta_nro}*
+*MOTIVO:* {st.session_state.motivo_final.upper()}
+*SECUESTRO:* **{st.session_state.secuestro.upper()}**
+*Acta N• {st.session_state.acta_nro}*
 
-👮 *PERSONAL:* {actuante_ap.upper()}"""
+👮 *PERSONAL:* {st.session_state.actuante_ap.upper()}"""
     st.code(res_wa)
-
-with tab5:
-    st.write("Registros guardados en esta sesión.")
