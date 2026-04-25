@@ -58,12 +58,11 @@ with tabs[2]:
     st.session_state.secuestro = st.text_area("Elementos en depósito", value=st.session_state.secuestro)
 
 with tabs[3]:
-    # Motivo predefinido según acta oficial
     motivo_doc = "SE DETECTA AL MASCULINO OCULTÁNDOSE DE LA VISUAL DE LA PREVENCIÓN Y, AL REQUERIRLE SU IDENTIFICACIÓN, MANIFIESTA NO POSEER DNI EN SU PODER NI RECORDAR CON EXACTITUD SU NÚMERO."
     st.session_state.motivo_unico = st.text_area("Motivo de la demora", value=motivo_doc if not st.session_state.motivo_unico else st.session_state.motivo_unico)
     st.session_state.of_recibe = st.text_input("Oficial que recibe", value=st.session_state.of_recibe)
 
-    # --- GENERADOR DE PDF ---
+    # --- FUNCIÓN GENERADORA DE PDF CORREGIDA ---
     def crear_pdf():
         pdf = FPDF()
         pdf.set_margins(30, 30, 20)
@@ -76,7 +75,6 @@ with tabs[3]:
         pdf.ln(5)
         
         pdf.set_font('Arial', '', 11)
-        # Redacción espejo del Word oficial
         cuerpo = (
             f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
             f"siendo las {st.session_state.hora_demora} hs, el funcionario policial actuante {st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()} "
@@ -102,11 +100,18 @@ with tabs[3]:
         pdf.cell(53, 5, "DEMORADO", align='C')
         pdf.cell(53, 5, "OF. GUARDIA", align='C')
         
-        return pdf.output(dest='S').encode('latin-1')
+        # Esta sintaxis es más robusta frente a diferentes versiones
+        return pdf.output(dest='S')
 
     # BOTONES
     st.write("---")
-    st.download_button("📄 DESCARGAR PDF OFICIAL", data=crear_pdf(), file_name=f"Acta_10Bis_{st.session_state.apellido}.pdf", mime="application/pdf")
+    # Se eliminó .encode('latin-1') aquí porque output(dest='S') ya maneja el formato de bytes en la mayoría de versiones modernas
+    st.download_button(
+        label="📄 DESCARGAR PDF OFICIAL", 
+        data=crear_pdf(), 
+        file_name=f"Acta_10Bis_{st.session_state.apellido}.pdf", 
+        mime="application/pdf"
+    )
     
     if st.button("💾 GUARDAR REGISTRO"):
         st.session_state.historial.append({k: st.session_state[k] for k in campos_base.keys()})
