@@ -1,6 +1,7 @@
 import streamlit as st
 from fpdf import FPDF
 from datetime import datetime
+import re
 
 # --- CONFIGURACIÓN DE LA APP ---
 st.set_page_config(page_title="SVI - ACTA 10 BIS", page_icon="👮", layout="wide")
@@ -88,47 +89,63 @@ with tab4:
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
 
     def generar_pdf():
-        pdf = FPDF()
-        pdf.set_margins(left=30, top=30, right=20)
-        pdf.add_page()
-        ahora = datetime.now()
-        meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-        
-        pdf.set_font('helvetica', 'B', 12)
-        pdf.cell(0, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", new_x="LMARGIN", new_y="NEXT", align='C')
-        pdf.ln(5)
+        try:
+            pdf = FPDF()
+            pdf.set_margins(left=30, top=30, right=20)
+            pdf.add_page()
+            ahora = datetime.now()
+            meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+            
+            pdf.set_font('helvetica', 'B', 12)
+            pdf.cell(0, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", new_x="LMARGIN", new_y="NEXT", align='C')
+            pdf.ln(5)
 
-        pdf.set_font('helvetica', '', 11)
-        
-        # El uso de <b> dentro de write_html garantiza el justificado perfecto con negritas intercaladas
-        cuerpo_html = (
-            f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
-            f"siendo las <b>{st.session_state.hora_demora} hs</b>, el funcionario policial actuante <b>{st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()}</b> "
-            f"a cargo de la unidad móvil <b>{st.session_state.movil}</b> juntamente con el refuerzo <b>{st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}</b>, "
-            f"ambos pertenecientes a <b>{st.session_state.unidad}</b> de la UR II Rosario, SE HACE CONSTAR: Que de conformidad a lo establecido en el "
-            f"Art. 10 bis de la Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las <b>{st.session_state.hora_demora} horas</b>, "
-            f"desde calle <b>{st.session_state.lugar.upper()}</b> al cual manifiesta ser <b>{st.session_state.apellido.upper()} {st.session_state.nombre.upper()}</b>, "
-            f"DNI <b>{st.session_state.dni}</b>, de nacionalidad <b>{st.session_state.nacionalidad.upper()}</b>, estado civil <b>{st.session_state.est_civil}</b>, nacido el <b>{st.session_state.nacimiento}</b>, "
-            f"contando con <b>{st.session_state.edad}</b> años de edad, hijo de <b>{st.session_state.padres.upper()}</b>, con domicilio real en la calle <b>{st.session_state.domicilio.upper()}</b> "
-            f"de esta ciudad. Adoptándose esta medida por el motivo de que ante la presencia policial: <b>{st.session_state.motivo_unico.upper()}</b>. "
-            f"A continuación se le imponen al demorado sus derechos y garantías: a) será trasladado a la dependencia; b) la demora no superará las SEIS (6) HORAS; "
-            f"c) no será incomunicado; d) tiene derecho a realizar una llamada telefónica; e) no será alojado con detenidos comunes; f) se labra la presente acta ante los testigos: "
-            f"<b>{st.session_state.testigo_datos.upper()}</b>. Se hace constar que de la requisa efectuada sobre el demorado la misma arrojó resultado <b>{st.session_state.requisa.upper()}</b>. "
-            f"Es dable hacer mención que se le secuestra en carácter de depósito para su resguardo: <b>{st.session_state.secuestro.upper()}</b>. "
-            f"Se deja constancia que el demorado <b>{st.session_state.estado_fisico}</b>. Se hace constar que se labra la presente en recibiendo de conformidad "
-            f"<b>{st.session_state.of_recibe.upper()}</b> en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual "
-            f"firman los testigos, demorado y el personal actuante para su debida constancia."
-        )
+            pdf.set_font('helvetica', '', 11)
+            
+            # Limpiamos caracteres que puedan romper el parser de HTML
+            def clean(txt):
+                return str(txt).replace("&", "y").replace("<", "").replace(">", "")
 
-        # La clave es text_align="J" para el justificado forzado
-        pdf.write_html(cuerpo_html, text_align="J")
+            cuerpo_html = (
+                f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
+                f"siendo las <b>{clean(st.session_state.hora_demora)} hs</b>, el funcionario policial actuante <b>{clean(st.session_state.actuante_ap.upper())} {clean(st.session_state.actuante_nom.upper())}</b> "
+                f"a cargo de la unidad móvil <b>{clean(st.session_state.movil)}</b> juntamente con el refuerzo <b>{clean(st.session_state.refuerzo_ap.upper())} {clean(st.session_state.refuerzo_nom.upper())}</b>, "
+                f"ambos pertenecientes a <b>{clean(st.session_state.unidad)}</b> de la UR II Rosario, SE HACE CONSTAR: Que de conformidad a lo establecido en el "
+                f"Art. 10 bis de la Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las <b>{clean(st.session_state.hora_demora)} horas</b>, "
+                f"desde calle <b>{clean(st.session_state.lugar.upper())}</b> al cual manifiesta ser <b>{clean(st.session_state.apellido.upper())} {clean(st.session_state.nombre.upper())}</b>, "
+                f"DNI <b>{clean(st.session_state.dni)}</b>, de nacionalidad <b>{clean(st.session_state.nacionalidad.upper())}</b>, estado civil <b>{clean(st.session_state.est_civil)}</b>, nacido el <b>{clean(st.session_state.nacimiento)}</b>, "
+                f"contando con <b>{clean(st.session_state.edad)}</b> años de edad, hijo de <b>{clean(st.session_state.padres.upper())}</b>, con domicilio real en la calle <b>{clean(st.session_state.domicilio.upper())}</b> "
+                f"de esta ciudad. Adoptándose esta medida por el motivo de que ante la presencia policial: <b>{clean(st.session_state.motivo_unico.upper())}</b>. "
+                f"A continuación se le imponen al demorado sus derechos y garantías: a) será trasladado a la dependencia; b) la demora no superará las SEIS (6) HORAS; "
+                f"c) no será incomunicado; d) tiene derecho a realizar una llamada telefónica; e) no será alojado con detenidos comunes; f) se labra la presente acta ante los testigos: "
+                f"<b>{clean(st.session_state.testigo_datos.upper())}</b>. Se hace constar que de la requisa efectuada sobre el demorado la misma arrojó resultado <b>{clean(st.session_state.requisa.upper())}</b>. "
+                f"Es dable hacer mención que se le secuestra en carácter de depósito para su resguardo: <b>{clean(st.session_state.secuestro.upper())}</b>. "
+                f"Se deja constancia que el demorado <b>{clean(st.session_state.estado_fisico)}</b>. Se hace constar que se labra la presente en recibiendo de conformidad "
+                f"<b>{clean(st.session_state.of_recibe.upper())}</b> en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual "
+                f"firman los testigos, demorado y el personal actuante para su debida constancia."
+            )
 
-        pdf.ln(15)
-        pdf.set_font('helvetica', 'B', 11)
-        pdf.cell(0, 10, "HORA DE CESE: __________ hs.", new_x="LMARGIN", new_y="NEXT")
-        
-        pdf_output = pdf.output()
-        return bytes(pdf_output) if isinstance(pdf_output, bytearray) else pdf_output
+            pdf.write_html(cuerpo_html, text_align="J")
+
+            pdf.ln(15)
+            pdf.set_font('helvetica', 'B', 11)
+            pdf.cell(0, 10, "HORA DE CESE: __________ hs.", new_x="LMARGIN", new_y="NEXT")
+            
+            return bytes(pdf.output())
+
+        except Exception as e:
+            # Plan B: Si write_html falla, generamos texto plano para no bloquear al usuario
+            pdf_b = FPDF()
+            pdf_b.set_margins(left=30, top=30, right=20)
+            pdf_b.add_page()
+            pdf_b.set_font('helvetica', 'B', 12)
+            pdf_b.cell(0, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", align='C', new_x="LMARGIN", new_y="NEXT")
+            pdf_b.ln(5)
+            pdf_b.set_font('helvetica', '', 11)
+            # Limpiamos las etiquetas HTML para el Plan B
+            texto_plano = cuerpo_html.replace("<b>", "").replace("</b>", "")
+            pdf_b.multi_cell(0, 7, texto_plano, align='J')
+            return bytes(pdf_b.output())
 
     col_pdf, col_hist = st.columns(2)
     with col_pdf:
