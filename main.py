@@ -3,7 +3,16 @@ from fpdf import FPDF
 from datetime import datetime
 
 # --- CONFIGURACIÓN DE LA APP ---
-st.set_page_config(page_title="ACTA DE DEMORA 10 BIS,creado por Sub Crio Castañeda", page_icon="👮", layout="wide")
+st.set_page_config(page_title="SVI - ACTA 10 BIS", page_icon="👮", layout="wide")
+
+# --- BARRA LATERAL (AUTORÍA) ---
+with st.sidebar:
+    st.markdown("### 🛠️ Desarrollo")
+    st.info("**Creado por:** \n\nSubComisario Castañeda Juan")
+    st.write("Sistemas de Automatización Policial")
+    st.divider()
+    st.caption("Versión Estable 2026.04")
+    st.caption("Rosario, Santa Fe")
 
 # --- INICIALIZACIÓN DE MEMORIA ---
 campos_base = {
@@ -25,7 +34,9 @@ if 'historial' not in st.session_state:
     st.session_state.historial = []
 
 # --- INTERFAZ DE USUARIO ---
-st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395,creado por Sub Crio Castañeda")
+st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395")
+st.markdown(f"🚀 **Sistema SVI** | Creado por: **SubComisario Castañeda Juan**")
+st.markdown("---")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 Testigo/Requisa", "✍️ Cierre y WhatsApp", "🗂️ Historial"])
 
@@ -82,7 +93,7 @@ with tab4:
 
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
 
-    # --- FUNCIÓN GENERADORA DE PDF JUSTIFICADO (VERSION ESTABLE) ---
+    # --- FUNCIÓN GENERADORA DE PDF ---
     def generar_pdf():
         pdf = FPDF()
         pdf.set_margins(left=30, top=30, right=20)
@@ -116,19 +127,32 @@ with tab4:
         )
 
         pdf.multi_cell(160, 7, cuerpo.encode('latin-1', 'replace').decode('latin-1'), align='J')
-        pdf.ln(15)
+        pdf.ln(10)
         pdf.set_font('Arial', 'B', 11)
         pdf.cell(160, 10, "HORA DE CESE: __________ hs.", ln=True)
         
-        # Esta es la parte que corregimos para evitar el AttributeError
+        # Sector de firmas
+        pdf.ln(25)
+        pdf.set_font('Arial', '', 9)
+        pdf.cell(50, 0, "", border='T') 
+        pdf.cell(5, 0, "") 
+        pdf.cell(50, 0, "", border='T') 
+        pdf.cell(5, 0, "") 
+        pdf.cell(50, 0, "", border='T') 
+        pdf.ln(2)
+        pdf.cell(50, 5, "PERSONAL ACTUANTE", 0, 0, 'C')
+        pdf.cell(5, 5, "")
+        pdf.cell(50, 5, "DEMORADO", 0, 0, 'C')
+        pdf.cell(5, 5, "")
+        pdf.cell(50, 5, "OFICIAL DE GUARDIA", 0, 0, 'C')
+        
         return bytes(pdf.output())
 
     # --- BOTONES ---
     col_pdf, col_hist = st.columns(2)
     with col_pdf:
-        # Generar el PDF solo si hay un apellido para evitar errores al cargar
         if st.session_state.apellido:
-            st.download_button("📄 DESCARGAR PDF JUSTIFICADO", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
+            st.download_button("📄 DESCARGAR PDF CON FIRMAS", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
         else:
             st.warning("Complete el apellido para descargar.")
             
@@ -139,7 +163,7 @@ with tab4:
             st.session_state.historial.append(reg)
             st.success("Guardado.")
 
-    # --- PARTE DE WHATSAPP ---
+    # --- WHATSAPP ---
     st.subheader("📲 Parte para WhatsApp")
     res_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
 *HORA:* {st.session_state.hora_demora} hs.
