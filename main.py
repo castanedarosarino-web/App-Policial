@@ -100,32 +100,33 @@ with tab4:
 
         pdf.set_font('helvetica', '', 11)
         
-        cuerpo = (
+        # El uso de <b> dentro de write_html garantiza el justificado perfecto con negritas intercaladas
+        cuerpo_html = (
             f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
-            f"siendo las {st.session_state.hora_demora} hs, el funcionario policial actuante {st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()} "
-            f"a cargo de la unidad móvil {st.session_state.movil} juntamente con el refuerzo {st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}, "
-            f"ambos pertenecientes a {st.session_state.unidad} de la UR II Rosario, SE HACE CONSTAR: Que de conformidad a lo establecido en el "
-            f"Art. 10 bis de la Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las {st.session_state.hora_demora} horas, "
-            f"desde calle {st.session_state.lugar.upper()} al cual manifiesta ser {st.session_state.apellido.upper()} {st.session_state.nombre.upper()}, "
-            f"DNI {st.session_state.dni}, de nacionalidad {st.session_state.nacionalidad.upper()}, estado civil {st.session_state.est_civil}, nacido el {st.session_state.nacimiento}, "
-            f"contando con {st.session_state.edad} años de edad, hijo de {st.session_state.padres.upper()}, con domicilio real en la calle {st.session_state.domicilio.upper()} "
-            f"de esta ciudad. Adoptándose esta medida por el motivo de que ante la presencia policial: {st.session_state.motivo_unico.upper()}. "
+            f"siendo las <b>{st.session_state.hora_demora} hs</b>, el funcionario policial actuante <b>{st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()}</b> "
+            f"a cargo de la unidad móvil <b>{st.session_state.movil}</b> juntamente con el refuerzo <b>{st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}</b>, "
+            f"ambos pertenecientes a <b>{st.session_state.unidad}</b> de la UR II Rosario, SE HACE CONSTAR: Que de conformidad a lo establecido en el "
+            f"Art. 10 bis de la Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las <b>{st.session_state.hora_demora} horas</b>, "
+            f"desde calle <b>{st.session_state.lugar.upper()}</b> al cual manifiesta ser <b>{st.session_state.apellido.upper()} {st.session_state.nombre.upper()}</b>, "
+            f"DNI <b>{st.session_state.dni}</b>, de nacionalidad <b>{st.session_state.nacionalidad.upper()}</b>, estado civil <b>{st.session_state.est_civil}</b>, nacido el <b>{st.session_state.nacimiento}</b>, "
+            f"contando con <b>{st.session_state.edad}</b> años de edad, hijo de <b>{st.session_state.padres.upper()}</b>, con domicilio real en la calle <b>{st.session_state.domicilio.upper()}</b> "
+            f"de esta ciudad. Adoptándose esta medida por el motivo de que ante la presencia policial: <b>{st.session_state.motivo_unico.upper()}</b>. "
             f"A continuación se le imponen al demorado sus derechos y garantías: a) será trasladado a la dependencia; b) la demora no superará las SEIS (6) HORAS; "
             f"c) no será incomunicado; d) tiene derecho a realizar una llamada telefónica; e) no será alojado con detenidos comunes; f) se labra la presente acta ante los testigos: "
-            f"{st.session_state.testigo_datos.upper()}. Se hace constar que de la requisa efectuada sobre el demorado la misma arrojó resultado {st.session_state.requisa.upper()}. "
-            f"Es dable hacer mención que se le secuestra en carácter de depósito para su resguardo: {st.session_state.secuestro.upper()}. "
-            f"Se deja constancia que el demorado {st.session_state.estado_fisico}. Se hace constar que se labra la presente en recibiendo de conformidad "
-            f"{st.session_state.of_recibe.upper()} en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual "
+            f"<b>{st.session_state.testigo_datos.upper()}</b>. Se hace constar que de la requisa efectuada sobre el demorado la misma arrojó resultado <b>{st.session_state.requisa.upper()}</b>. "
+            f"Es dable hacer mención que se le secuestra en carácter de depósito para su resguardo: <b>{st.session_state.secuestro.upper()}</b>. "
+            f"Se deja constancia que el demorado <b>{st.session_state.estado_fisico}</b>. Se hace constar que se labra la presente en recibiendo de conformidad "
+            f"<b>{st.session_state.of_recibe.upper()}</b> en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual "
             f"firman los testigos, demorado y el personal actuante para su debida constancia."
         )
 
-        pdf.multi_cell(0, 7, cuerpo, align='J')
+        # La clave es text_align="J" para el justificado forzado
+        pdf.write_html(cuerpo_html, text_align="J")
 
         pdf.ln(15)
         pdf.set_font('helvetica', 'B', 11)
         pdf.cell(0, 10, "HORA DE CESE: __________ hs.", new_x="LMARGIN", new_y="NEXT")
         
-        # Generar bytes y asegurar formato correcto para Streamlit
         pdf_output = pdf.output()
         return bytes(pdf_output) if isinstance(pdf_output, bytearray) else pdf_output
 
@@ -144,7 +145,6 @@ with tab4:
             st.session_state.historial.append(reg)
             st.success("Guardado.")
 
-    # --- PARTE DE WHATSAPP ---
     st.subheader("📲 Parte para WhatsApp")
     res_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
 *HORA:* {st.session_state.hora_demora} hs.
@@ -170,7 +170,7 @@ with tab4:
 with tab5:
     st.subheader("🗂️ Historial")
     if not st.session_state.historial:
-        st.info("No hay registros en esta sesión.")
+        st.info("No hay registros guardados.")
     for i, reg in enumerate(reversed(st.session_state.historial)):
         if st.button(f"📌 {reg['apellido']} ({reg['fecha_registro']})", key=f"h_{i}"):
             for k in campos_base.keys(): st.session_state[k] = reg[k]
