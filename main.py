@@ -93,17 +93,18 @@ with tab4:
 
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
 
-    # --- FUNCIÓN GENERADORA DE PDF ---
+    # --- FUNCIÓN GENERADORA DE PDF OPTIMIZADA PARA 1 HOJA ---
     def generar_pdf():
         pdf = FPDF()
-        pdf.set_margins(left=30, top=30, right=20)
+        # Ajustamos márgenes para ganar espacio (Izquierdo: 25, Arriba: 20, Derecho: 20)
+        pdf.set_margins(left=25, top=20, right=20)
         pdf.add_page()
         ahora = datetime.now()
         meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
         
         pdf.set_font('Arial', 'B', 12)
-        pdf.cell(160, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
-        pdf.ln(5)
+        pdf.cell(165, 8, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
+        pdf.ln(3) # Espacio reducido
         
         pdf.set_font('Arial', '', 11)
         
@@ -126,25 +127,27 @@ with tab4:
             f"firman los testigos, demorado y el personal actuante para su debida constancia."
         )
 
-        pdf.multi_cell(160, 7, cuerpo.encode('latin-1', 'replace').decode('latin-1'), align='J')
-        pdf.ln(10)
-        pdf.set_font('Arial', 'B', 11)
-        pdf.cell(160, 10, "HORA DE CESE: __________ hs.", ln=True)
+        # Bajamos el interlineado de 7 a 6 para compactar el acta
+        pdf.multi_cell(165, 6, cuerpo.encode('latin-1', 'replace').decode('latin-1'), align='J')
         
-        # Sector de firmas
-        pdf.ln(25)
+        pdf.ln(5) # Espacio reducido antes del cese
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(165, 8, "HORA DE CESE: __________ hs.", ln=True)
+        
+        # Sector de firmas (compactado)
+        pdf.ln(18) # Reducimos el salto para las firmas de 25 a 18
         pdf.set_font('Arial', '', 9)
-        pdf.cell(50, 0, "", border='T') 
-        pdf.cell(5, 0, "") 
-        pdf.cell(50, 0, "", border='T') 
-        pdf.cell(5, 0, "") 
-        pdf.cell(50, 0, "", border='T') 
+        pdf.cell(52, 0, "", border='T') 
+        pdf.cell(4, 0, "") 
+        pdf.cell(52, 0, "", border='T') 
+        pdf.cell(4, 0, "") 
+        pdf.cell(52, 0, "", border='T') 
         pdf.ln(2)
-        pdf.cell(50, 5, "PERSONAL ACTUANTE", 0, 0, 'C')
-        pdf.cell(5, 5, "")
-        pdf.cell(50, 5, "DEMORADO", 0, 0, 'C')
-        pdf.cell(5, 5, "")
-        pdf.cell(50, 5, "OFICIAL DE GUARDIA", 0, 0, 'C')
+        pdf.cell(52, 5, "PERSONAL ACTUANTE", 0, 0, 'C')
+        pdf.cell(4, 5, "")
+        pdf.cell(52, 5, "DEMORADO", 0, 0, 'C')
+        pdf.cell(4, 5, "")
+        pdf.cell(52, 5, "OFICIAL DE GUARDIA", 0, 0, 'C')
         
         return bytes(pdf.output())
 
@@ -152,7 +155,7 @@ with tab4:
     col_pdf, col_hist = st.columns(2)
     with col_pdf:
         if st.session_state.apellido:
-            st.download_button("📄 DESCARGAR PDF CON FIRMAS", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
+            st.download_button("📄 DESCARGAR PDF (1 HOJA)", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
         else:
             st.warning("Complete el apellido para descargar.")
             
