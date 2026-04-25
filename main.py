@@ -30,7 +30,6 @@ with st.sidebar:
     if st.button("🗑️ Vaciar Historial Completo"):
         if os.path.exists(DB_FILE): os.remove(DB_FILE)
         st.session_state.historial = []
-        st.success("Historial eliminado.")
         st.rerun()
 
 # --- DATOS JURISDICCIÓN ---
@@ -65,7 +64,9 @@ if 'historial' not in st.session_state:
 
 # --- INTERFAZ PRINCIPAL ---
 st.title("👮 ACTA DE DEMORA ART 10 BIS LEY 7.395")
-st.markdown("🚀 **Sistema SVI** | Gestión de Actas Digitales")
+# AUTORÍA REASIGNADA AL LUGAR CORRECTO
+st.markdown("🚀 **Creado por: SubComisario Castañeda Juan**")
+st.markdown("---")
 
 tabs = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 Testigo/Requisa", "✍️ Cierre y WhatsApp", "🗂️ Historial"])
 
@@ -108,24 +109,38 @@ with tabs[3]:
         "presenta lesiones de vieja data y no requirieron atención médica",
         "presenta lesiones que motivaron su traslado previo a un centro de salud"
     ])
-    st.session_state.motivo_unico = st.text_area("Motivo legal de la demora:", value=st.session_state.motivo_unico).upper()
+    
+    op_motivos = [
+        "EL INDIVIDUO CAMBIA BRUSCAMENTE SU SENTIDO DE MARCHA AL NOTAR LA PRESENCIA POLICIAL E INTENTA EVITAR CONTACTO, Y AL REQUERIRLE SU IDENTIFICACIÓN, MANIFIESTA NO POSEER DNI EN SU PODER NI RECORDAR CON EXACTITUD SU NÚMERO.",
+        "SE DETECTA AL MASCULINO OCULTÁNDOSE DE LA VISUAL DE LA PREVENCIÓN Y, AL REQUERIRLE SU IDENTIFICACIÓN, MANIFIESTA NO POSEER DNI EN SU PODER NI RECORDAR CON EXACTITUD SU NÚMERO.",
+        "AL NOTAR LA PRESENCIA DE LA PREVENCIÓN POLICIAL EL MASCULINO ACELERA SU MARCHA EN ACTITUD EVASIVA, NO LOGRANDO JUSTIFICAR SU PRESENCIA EN EL LUGAR Y CARECIENDO DE DOCUMENTACIÓN.",
+        "OTRO (Manual)"
+    ]
+    
+    index_motivo = 0
+    if st.session_state.motivo_unico in op_motivos:
+        index_motivo = op_motivos.index(st.session_state.motivo_unico)
+    elif st.session_state.motivo_unico != "":
+        index_motivo = 3
+        
+    seleccion_m = st.selectbox("Seleccione Motivo de Demora:", op_motivos, index=index_motivo)
+    
+    if seleccion_m == "OTRO (Manual)":
+        st.session_state.motivo_unico = st.text_area("Redacción del motivo:", value=st.session_state.motivo_unico if st.session_state.motivo_unico not in op_motivos[:3] else "").upper()
+    else:
+        st.session_state.motivo_unico = seleccion_m
+
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe:", value=st.session_state.of_recibe).upper()
 
-    # --- FUNCIÓN GENERAR PDF ---
     def generar_pdf_documento():
         pdf = FPDF()
         pdf.set_margins(left=25, top=20, right=20)
         pdf.add_page()
         ahora = datetime.now()
         meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-        
-        pdf.set_font('Arial', 'B', 14)
-        pdf.cell(165, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
-        pdf.ln(5)
-        
+        pdf.set_font('Arial', 'B', 14); pdf.cell(165, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C'); pdf.ln(5)
         pdf.set_font('Arial', '', 11)
         info_jur = MAPA_JURISDICCION[st.session_state.jurisdiccion]
-        
         texto_acta = (
             f"En la {info_jur['tipo'].upper()} de {st.session_state.jurisdiccion.upper()}, departamento {info_jur['depto'].upper()} de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
             f"siendo las {st.session_state.hora_demora} hs, el funcionario policial actuante {st.session_state.actuante_ap} {st.session_state.actuante_nom} "
@@ -144,34 +159,25 @@ with tabs[3]:
             f"{st.session_state.of_recibe} en carácter de oficial de guardia. Con lo que no siendo para más se da por finalizado el presente acto del cual "
             f"firman los testigos, demorado y el personal actuante para su debida constancia."
         )
-        pdf.multi_cell(165, 7, texto_acta.encode('latin-1', 'replace').decode('latin-1'), align='J')
-        pdf.ln(10)
-        pdf.set_font('Arial', 'B', 11)
-        pdf.cell(165, 10, "HORA DE CESE DE DEMORA: __________ hs.", ln=True)
-        pdf.ln(20)
+        pdf.multi_cell(165, 7, texto_acta.encode('latin-1', 'replace').decode('latin-1'), align='J'); pdf.ln(10)
+        pdf.set_font('Arial', 'B', 11); pdf.cell(165, 10, "HORA DE CESE DE DEMORA: __________ hs.", ln=True); pdf.ln(20)
         pdf.set_font('Arial', '', 9)
         pdf.cell(52, 0, "", border='T'); pdf.cell(4, 0, ""); pdf.cell(52, 0, "", border='T'); pdf.cell(4, 0, ""); pdf.cell(52, 0, "", border='T')
-        pdf.ln(2)
-        pdf.cell(52, 5, "PERSONAL ACTUANTE", 0, 0, 'C'); pdf.cell(4, 5, ""); pdf.cell(52, 5, "DEMORADO", 0, 0, 'C'); pdf.cell(4, 5, ""); pdf.cell(52, 5, "OFICIAL DE GUARDIA", 0, 0, 'C')
-        
+        pdf.ln(2); pdf.cell(52, 5, "PERSONAL ACTUANTE", 0, 0, 'C'); pdf.cell(4, 5, ""); pdf.cell(52, 5, "DEMORADO", 0, 0, 'C'); pdf.cell(4, 5, ""); pdf.cell(52, 5, "OFICIAL DE GUARDIA", 0, 0, 'C')
         return bytes(pdf.output(dest='S'))
 
-    # --- BOTONERA DE ACCIÓN ---
     c_pdf, c_save = st.columns(2)
     with c_pdf:
         if st.session_state.apellido:
-            st.download_button("📄 DESCARGAR PDF (OFICIAL)", data=generar_pdf_documento(), file_name=f"Acta_10Bis_{st.session_state.apellido}.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("📄 DESCARGAR PDF", data=generar_pdf_documento(), file_name=f"10Bis_{st.session_state.apellido}.pdf", mime="application/pdf", use_container_width=True)
     with c_save:
-        if st.button("💾 GUARDAR EN HISTORIAL (Permanente)", use_container_width=True):
-            registro = {clave: st.session_state[clave] for clave in campos_base.keys()}
-            registro['fecha_registro'] = datetime.now().strftime('%d/%m %H:%M')
-            st.session_state.historial.append(registro)
-            guardar_historial(st.session_state.historial)
-            st.success("✅ Guardado en memoria física.")
+        if st.button("💾 GUARDAR EN HISTORIAL", use_container_width=True):
+            reg = {clave: st.session_state[clave] for clave in campos_base.keys()}
+            reg['fecha_registro'] = datetime.now().strftime('%d/%m %H:%M')
+            st.session_state.historial.append(reg); guardar_historial(st.session_state.historial)
+            st.success("✅ Guardado.")
 
-    # --- PARTE DE WHATSAPP ---
-    st.divider()
-    st.subheader("📲 Parte para WhatsApp")
+    st.divider(); st.subheader("📲 Parte para WhatsApp")
     parte_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
 *HORA:* {st.session_state.hora_demora} hs.
 *LUGAR:* {st.session_state.lugar}
@@ -193,14 +199,12 @@ with tabs[3]:
     st.code(parte_wa)
 
 with tabs[4]:
-    st.subheader("🗂️ Historial Guardado en el Dispositivo")
+    st.subheader("🗂️ Historial")
     h_actual = cargar_historial()
-    if not h_actual:
-        st.info("No hay registros en el archivo local.")
+    if not h_actual: st.info("Sin registros.")
     else:
         for i, r in enumerate(reversed(h_actual)):
             with st.expander(f"📌 {r['apellido']} - {r['fecha_registro']}"):
-                st.write(f"DNI: {r['dni']} | Móvil: {r['movil']}")
                 if st.button("Cargar estos datos", key=f"btn_{i}"):
                     for k in campos_base.keys(): st.session_state[k] = r[k]
                     st.rerun()
