@@ -14,9 +14,18 @@ with st.sidebar:
     st.caption("Versión Estable 2026.04")
     st.caption("Rosario, Santa Fe")
 
+# --- DATA DE LA INSPECCIÓN 8va ---
+MAPA_JURISDICCION = {
+    "Pérez": {"tipo": "Ciudad", "depto": "Rosario"},
+    "Funes": {"tipo": "Ciudad", "depto": "Rosario"},
+    "Soldini": {"tipo": "Localidad", "depto": "Rosario"},
+    "Zavalla": {"tipo": "Localidad", "depto": "Rosario"},
+    "Rosario": {"tipo": "Ciudad", "depto": "Rosario"}
+}
+
 # --- INICIALIZACIÓN DE MEMORIA ---
 campos_base = {
-    'unidad': "G.T.M.", 'tercio': "TERCIO ALPHA", 'movil': "12.116", 'jurisdiccion': "SUB 18",
+    'unidad': "G.T.M.", 'tercio': "TERCIO ALPHA", 'movil': "12.116", 'jurisdiccion': "Pérez",
     'lugar': "", 'hora_demora': datetime.now().strftime('%H:%M'), 'acta_nro': "",
     'apellido': "", 'nombre': "", 'dni': "", 'nacionalidad': "ARGENTINA",
     'est_civil': "SOLTERO/A", 'edad': "", 'nacimiento': "", 'domicilio': "", 'padres': "",
@@ -46,8 +55,17 @@ with tab1:
     u_sel = c1.selectbox("Unidad", u_opciones, index=u_opciones.index(st.session_state.unidad) if st.session_state.unidad in u_opciones else 0)
     st.session_state.unidad = c1.text_input("Especifique Unidad", value=st.session_state.unidad) if u_sel == "OTRO" else u_sel
     st.session_state.tercio = c2.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
+    
     st.session_state.movil = st.text_input("Móvil / Legajo", value=st.session_state.movil)
-    st.session_state.jurisdiccion = st.text_input("Jurisdicción de entrega", value=st.session_state.jurisdiccion)
+    
+    # --- MODIFICACIÓN INTELIGENTE: JURISDICCIÓN INSPECCIÓN 8va ---
+    lista_8va = list(MAPA_JURISDICCION.keys())
+    st.session_state.jurisdiccion = st.selectbox(
+        "Jurisdicción de entrega (Inspección 8va):", 
+        lista_8va, 
+        index=lista_8va.index(st.session_state.jurisdiccion) if st.session_state.jurisdiccion in lista_8va else 0
+    )
+    
     st.session_state.lugar = st.text_input("Lugar del procedimiento", value=st.session_state.lugar)
     st.session_state.hora_demora = st.text_input("Hora de inicio", value=st.session_state.hora_demora)
     st.session_state.acta_nro = st.text_input("Acta Nº", value=st.session_state.acta_nro)
@@ -93,10 +111,8 @@ with tab4:
 
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
 
-    # --- FUNCIÓN GENERADORA DE PDF OPTIMIZADA PARA 1 HOJA ---
     def generar_pdf():
         pdf = FPDF()
-        # Ajustamos márgenes para ganar espacio (Izquierdo: 25, Arriba: 20, Derecho: 20)
         pdf.set_margins(left=25, top=20, right=20)
         pdf.add_page()
         ahora = datetime.now()
@@ -104,12 +120,17 @@ with tab4:
         
         pdf.set_font('Arial', 'B', 12)
         pdf.cell(165, 8, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
-        pdf.ln(3) # Espacio reducido
+        pdf.ln(3)
         
         pdf.set_font('Arial', '', 11)
         
+        # --- LÓGICA DE REDACCIÓN INTELIGENTE PARA EL PDF ---
+        info_jur = MAPA_JURISDICCION[st.session_state.jurisdiccion]
+        prefijo_lugar = info_jur["tipo"].upper() # CIUDAD o LOCALIDAD
+        depto_lugar = info_jur["depto"].upper()
+
         cuerpo = (
-            f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
+            f"En la {prefijo_lugar} de {st.session_state.jurisdiccion.upper()}, departamento {depto_lugar} de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
             f"siendo las {st.session_state.hora_demora} hs, el funcionario policial actuante {st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()} "
             f"a cargo de la unidad móvil {st.session_state.movil} juntamente con el refuerzo {st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}, "
             f"ambos pertenecientes a {st.session_state.unidad} de la UR II Rosario, SE HACE CONSTAR: Que de conformidad a lo establecido en el "
@@ -127,15 +148,13 @@ with tab4:
             f"firman los testigos, demorado y el personal actuante para su debida constancia."
         )
 
-        # Bajamos el interlineado de 7 a 6 para compactar el acta
         pdf.multi_cell(165, 6, cuerpo.encode('latin-1', 'replace').decode('latin-1'), align='J')
         
-        pdf.ln(5) # Espacio reducido antes del cese
+        pdf.ln(5)
         pdf.set_font('Arial', 'B', 11)
         pdf.cell(165, 8, "HORA DE CESE: __________ hs.", ln=True)
         
-        # Sector de firmas (compactado)
-        pdf.ln(18) # Reducimos el salto para las firmas de 25 a 18
+        pdf.ln(18)
         pdf.set_font('Arial', '', 9)
         pdf.cell(52, 0, "", border='T') 
         pdf.cell(4, 0, "") 
@@ -170,6 +189,7 @@ with tab4:
     st.subheader("📲 Parte para WhatsApp")
     res_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
 *HORA:* {st.session_state.hora_demora} hs.
+*JURISDICCIÓN:* {st.session_state.jurisdiccion.upper()}
 *LUGAR:* {st.session_state.lugar.upper()}
 
 *👤 DEMORADO:*
