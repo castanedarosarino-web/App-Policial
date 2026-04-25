@@ -88,14 +88,12 @@ with tab4:
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
 
     def generar_pdf():
-        # Inicialización compatible con fpdf2
         pdf = FPDF()
         pdf.set_margins(left=30, top=30, right=20)
         pdf.add_page()
         ahora = datetime.now()
         meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
         
-        # Usamos helvetica (nombre estándar en fpdf2)
         pdf.set_font('helvetica', 'B', 12)
         pdf.cell(0, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", new_x="LMARGIN", new_y="NEXT", align='C')
         pdf.ln(5)
@@ -121,17 +119,24 @@ with tab4:
             f"firman los testigos, demorado y el personal actuante para su debida constancia."
         )
 
-        # Con fpdf2, multi_cell maneja el texto directo con tildes perfectamente
         pdf.multi_cell(0, 7, cuerpo, align='J')
 
         pdf.ln(15)
         pdf.set_font('helvetica', 'B', 11)
         pdf.cell(0, 10, "HORA DE CESE: __________ hs.", new_x="LMARGIN", new_y="NEXT")
-        return pdf.output()
+        
+        # Generar bytes y asegurar formato correcto para Streamlit
+        pdf_output = pdf.output()
+        return bytes(pdf_output) if isinstance(pdf_output, bytearray) else pdf_output
 
     col_pdf, col_hist = st.columns(2)
     with col_pdf:
-        st.download_button("📄 DESCARGAR PDF JUSTIFICADO", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
+        st.download_button(
+            label="📄 DESCARGAR PDF JUSTIFICADO", 
+            data=generar_pdf(), 
+            file_name=f"10Bis_{st.session_state.apellido}.pdf",
+            mime="application/pdf"
+        )
     with col_hist:
         if st.button("💾 GUARDAR EN HISTORIAL"):
             reg = {clave: st.session_state[clave] for clave in campos_base.keys()}
@@ -139,6 +144,7 @@ with tab4:
             st.session_state.historial.append(reg)
             st.success("Guardado.")
 
+    # --- PARTE DE WHATSAPP ---
     st.subheader("📲 Parte para WhatsApp")
     res_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
 *HORA:* {st.session_state.hora_demora} hs.
@@ -163,6 +169,8 @@ with tab4:
 
 with tab5:
     st.subheader("🗂️ Historial")
+    if not st.session_state.historial:
+        st.info("No hay registros en esta sesión.")
     for i, reg in enumerate(reversed(st.session_state.historial)):
         if st.button(f"📌 {reg['apellido']} ({reg['fecha_registro']})", key=f"h_{i}"):
             for k in campos_base.keys(): st.session_state[k] = reg[k]
