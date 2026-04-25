@@ -33,7 +33,7 @@ with tab1:
     c1, c2 = st.columns(2)
     u_opciones = ["G.T.M.", "C.R.E. ROSARIO", "B.O.U.", "P.A.T.", "OTRO"]
     u_sel = c1.selectbox("Unidad", u_opciones, index=u_opciones.index(st.session_state.unidad) if st.session_state.unidad in u_opciones else 0)
-    st.session_state.unidad = c1.text_input("Especifique", value=st.session_state.unidad) if u_sel == "OTRO" else u_sel
+    st.session_state.unidad = c1.text_input("Especifique Unidad", value=st.session_state.unidad) if u_sel == "OTRO" else u_sel
     st.session_state.tercio = c2.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
     st.session_state.movil = st.text_input("Móvil / Legajo", value=st.session_state.movil)
     st.session_state.jurisdiccion = st.text_input("Jurisdicción de entrega", value=st.session_state.jurisdiccion)
@@ -82,7 +82,7 @@ with tab4:
 
     st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
 
-    # --- FUNCIÓN GENERADORA DE PDF CON NEGRITA TÉCNICA ---
+    # --- FUNCIÓN GENERADORA DE PDF ---
     def generar_pdf():
         pdf = FPDF()
         pdf.set_margins(left=30, top=30, right=15)
@@ -157,7 +157,7 @@ with tab4:
     # --- BOTONES DE ACCIÓN ---
     col_pdf, col_hist = st.columns(2)
     with col_pdf:
-        st.download_button("📄 DESCARGAR PDF UNIFICADO", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
+        st.download_button("📄 DESCARGAR PDF", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
     with col_hist:
         if st.button("💾 GUARDAR EN HISTORIAL"):
             reg = {clave: st.session_state[clave] for clave in campos_base.keys()}
@@ -167,7 +167,7 @@ with tab4:
 
     # --- PARTE DE WHATSAPP ---
     st.subheader("📲 Parte para WhatsApp")
-    res_wa = f"""*🚔 {st.session_state.unitad}* | *ACTA 10 BIS*
+    res_wa = f"""*🚔 {st.session_state.unidad}* | *ACTA 10 BIS*
 *HORA:* {st.session_state.hora_demora} hs.
 *LUGAR:* {st.session_state.lugar.upper()}
 
