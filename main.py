@@ -17,7 +17,7 @@ campos_base = {
     'motivo_final': "", 'of_recibe': "suboficial Rodriguez (M)", 'redacta_wa': ""
 }
 
-# Crear los campos en la memoria si no existen
+# Asegurar que cada campo esté en la memoria
 for clave, valor in campos_base.items():
     if clave not in st.session_state:
         st.session_state[clave] = valor
@@ -30,25 +30,19 @@ def guardar_en_historial():
     registro = {clave: st.session_state[clave] for clave in campos_base.keys()}
     registro['fecha_registro'] = datetime.now().strftime('%H:%M:%S')
     st.session_state.historial.append(registro)
-    st.success(f"✅ Acta de {st.session_state.apellido} guardada en el historial.")
+    st.success(f"✅ Los datos de {st.session_state.apellido} se guardaron correctamente en el historial.")
 
 def recuperar_registro(index):
     registro = st.session_state.historial[index]
     for clave in campos_base.keys():
         st.session_state[clave] = registro[clave]
-    st.info(f"🔄 Datos de {registro['apellido']} cargados en el formulario.")
-
-def limpiar_formulario():
-    for clave, valor in campos_base.items():
-        st.session_state[clave] = valor
     st.rerun()
 
-# --- INTERFAZ ---
+# --- ESTILOS ---
 st.markdown("""
     <style>
-    .stButton>button { width: 100%; font-weight: bold; border-radius: 10px; }
-    .btn-guardar { background-color: #28a745; color: white; }
-    .autor-text { font-size: 11px; color: #777; margin-top: -20px; }
+    .stButton>button { width: 100%; font-weight: bold; border-radius: 10px; height: 3em; }
+    .autor-text { font-size: 11px; color: #777; margin-top: -20px; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -60,12 +54,20 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(["🚔 Servicio", "👤 Demorado", "🤝 
 
 with tab1:
     col1, col2 = st.columns(2)
-    st.session_state.unidad = col1.selectbox("Unidad", ["G.T.M.", "C.R.E. ROSARIO", "B.O.U.", "P.A.T.", "OTRO"], index=0)
+    u_opciones = ["G.T.M.", "C.R.E. ROSARIO", "B.O.U.", "P.A.T.", "OTRO"]
+    # Mantener la selección de unidad
+    idx_u = u_opciones.index(st.session_state.unidad) if st.session_state.unidad in u_opciones else 4
+    u_sel = col1.selectbox("Unidad", u_opciones, index=idx_u)
+    if u_sel == "OTRO":
+        st.session_state.unidad = col1.text_input("Especifique Unidad", value=st.session_state.unidad)
+    else:
+        st.session_state.unidad = u_sel
+        
     st.session_state.tercio = col2.selectbox("Tercio", ["TERCIO ALPHA", "TERCIO BRAVO", "TERCIO CHARLIE", "TERCIO DELTA"])
     st.session_state.movil = st.text_input("Móvil / Legajo", value=st.session_state.movil)
     st.session_state.jurisdiccion = st.text_input("Jurisdicción de entrega", value=st.session_state.jurisdiccion)
     st.session_state.lugar = st.text_input("Lugar de la demora", value=st.session_state.lugar)
-    st.session_state.hora_demora = st.text_input("Hora", value=st.session_state.hora_demora)
+    st.session_state.hora_demora = st.text_input("Hora de inicio", value=st.session_state.hora_demora)
     st.session_state.acta_nro = st.text_input("Acta Nº", value=st.session_state.acta_nro)
 
 with tab2:
@@ -77,71 +79,112 @@ with tab2:
     st.session_state.est_civil = st.selectbox("Estado Civil", ["SOLTERO/A", "CASADO/A", "DIVORCIADO/A", "CONCUBINATO"])
     st.session_state.edad = st.text_input("Edad", value=st.session_state.edad)
     st.session_state.nacimiento = st.text_input("Fecha Nacimiento", value=st.session_state.nacimiento)
-    st.session_state.domicilio = st.text_input("Domicilio", value=st.session_state.domicilio)
-    st.session_state.padres = st.text_input("Hijo de", value=st.session_state.padres)
+    st.session_state.domicilio = st.text_input("Domicilio Real", value=st.session_state.domicilio)
+    st.session_state.padres = st.text_input("Hijo de (Padre/Madre)", value=st.session_state.padres)
 
 with tab3:
     st.session_state.actuante_ap = st.text_input("Ap. Actuante", value=st.session_state.actuante_ap)
     st.session_state.actuante_nom = st.text_input("Nom. Actuante", value=st.session_state.actuante_nom)
     st.session_state.refuerzo_ap = st.text_input("Ap. Refuerzo", value=st.session_state.refuerzo_ap)
     st.session_state.refuerzo_nom = st.text_input("Nom. Refuerzo", value=st.session_state.refuerzo_nom)
-    st.session_state.testigo_datos = st.text_area("Testigo", value=st.session_state.testigo_datos)
-    st.session_state.requisa = st.text_area("Requisa", value=st.session_state.requisa)
-    st.session_state.secuestro = st.text_area("Secuestro", value=st.session_state.secuestro)
+    st.session_state.testigo_datos = st.text_area("Datos del Testigo", value=st.session_state.testigo_datos)
+    st.session_state.requisa = st.text_area("Resultado Requisa", value=st.session_state.requisa)
+    st.session_state.secuestro = st.text_area("Elementos en Depósito", value=st.session_state.secuestro)
 
 with tab4:
-    st.session_state.estado_fisico = st.selectbox("Estado físico:", [
+    op_fisicas = [
         "No presenta lesiones visibles, golpes ni manifiesta dolencias al momento de ingresar a la dependencia.",
         "Presenta lesiones de vieja data y no requirieron atención médica.",
         "Presenta lesiones que motivaron su traslado previo a un centro de salud para lo cual se anexa certificado médico."
-    ])
-    st.session_state.motivo_final = st.text_area("Motivo de demora", value=st.session_state.motivo_final)
-    st.session_state.of_recibe = st.text_input("Oficial recibe", value=st.session_state.of_recibe)
-    st.session_state.redacta_wa = st.text_input("Redactó WA", value=f"SubOf. {st.session_state.actuante_ap}")
-
-    # BOTONES DE ACCIÓN
-    col_btn1, col_btn2, col_btn3 = st.columns(3)
-    if col_btn1.button("💾 GUARDAR EN HISTORIAL"):
-        guardar_en_historial()
+    ]
+    st.session_state.estado_fisico = st.selectbox("Estado físico del demorado:", op_fisicas)
     
-    if col_btn2.button("🧹 LIMPIAR TODO"):
-        limpiar_formulario()
+    st.session_state.motivo_final = st.text_area("Motivo de la demora", value=st.session_state.motivo_final)
+    st.session_state.of_recibe = st.text_input("Oficial de Guardia que recibe", value=st.session_state.of_recibe)
+    st.session_state.redacta_wa = st.text_input("Firma para WhatsApp", value=f"SubOf. {st.session_state.actuante_ap}")
 
-    # --- PDF GENERATOR ---
+    # --- BOTONES PRINCIPALES ---
+    col_acc1, col_acc2 = st.columns(2)
+    if col_acc1.button("💾 GUARDAR EN HISTORIAL"):
+        guardar_en_historial()
+    if col_acc2.button("🧹 LIMPIAR FORMULARIO"):
+        for k, v in campos_base.items(): st.session_state[k] = v
+        st.rerun()
+
+    st.divider()
+
+    # --- PDF ESPEJO RECUPERADO ---
     def generar_pdf():
         pdf = FPDF()
         pdf.set_margins(left=30, top=30, right=15)
         pdf.add_page()
+        ahora = datetime.now()
+        meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+        
         pdf.set_font('Arial', 'B', 12)
         pdf.cell(165, 10, "ACTA DE DEMORA ART 10 BIS LEY 7.395", ln=True, align='C')
         pdf.ln(5)
+        
         pdf.set_font('Arial', '', 12)
+        redaccion = (f"En la ciudad de ROSARIO, departamento Rosario de la provincia de Santa Fe, a los {ahora.day} días del mes de {meses[ahora.month-1]} del año {ahora.year}, "
+                     f"siendo las {st.session_state.hora_demora} hs, el funcionario policial actuante {st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()} a cargo de la unidad móvil {st.session_state.movil} juntamente como refuerzo {st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}, "
+                     f"ambos pertenecientes a {st.session_state.unidad} de la UR II Rosario, se hace CONSTAR: Que de conformidad a lo establecido en el Art. 10 bis de la "
+                     f"Ley Orgánica de Policial de la Provincia de Santa Fe N° 7395 se procede a DEMORAR a las {st.session_state.hora_demora} horas, desde calle {st.session_state.lugar.upper()} al cual manifiesta ser "
+                     f"{st.session_state.apellido.upper()} {st.session_state.nombre.upper()}, DNI {st.session_state.dni}, de nacionalidad {st.session_state.nacionalidad.upper()}, domicilio en la calle {st.session_state.domicilio.upper()} de esta ciudad, hijo de {st.session_state.padres.upper()}, "
+                     f"fecha de nacimiento {st.session_state.nacimiento} contando con {st.session_state.edad} años de edad. Adoptándose esta medida por el motivo de que ante la presencia policial: {st.session_state.motivo_final.upper()}.")
         
-        cuerpo = (f"En la ciudad de ROSARIO, a los {datetime.now().day} días del mes de {datetime.now().month}, "
-                  f"siendo las {st.session_state.hora_demora} hs, el funcionario policial actuante {st.session_state.actuante_ap.upper()} {st.session_state.actuante_nom.upper()} "
-                  f"en móvil {st.session_state.movil} con refuerzo {st.session_state.refuerzo_ap.upper()} {st.session_state.refuerzo_nom.upper()}, "
-                  f"pertenecientes a {st.session_state.unidad}, procede a DEMORAR a {st.session_state.apellido.upper()} {st.session_state.nombre.upper()}, "
-                  f"DNI {st.session_state.dni}, domiciliado en {st.session_state.domicilio.upper()}. Motivo: {st.session_state.motivo_final.upper()}.")
+        pdf.multi_cell(165, 9, redaccion, align='J')
+        pdf.ln(4)
         
-        pdf.multi_cell(165, 9, cuerpo, align='J')
+        pdf.multi_cell(165, 9, ("A continuación se imponen al demorado sus derechos y garantías: a) será trasladado a dependencia; b) la demora no superará las SEIS (6) HORAS; c) no será incomunicado; d) derecho a una llamada telefónica; e) no será alojado con detenidos comunes; f) se labra acta con testigos: " + st.session_state.testigo_datos.upper() + "."), align='J')
+        pdf.ln(4)
+        
+        pdf.set_font('Arial', 'B', 12)
+        pdf.multi_cell(165, 9, f"REQUISA: {st.session_state.requisa.upper()}", border=1)
+        pdf.multi_cell(165, 9, f"SECUESTRO EN DEPÓSITO: {st.session_state.secuestro.upper()}", border=1)
+        pdf.set_font('Arial', '', 12)
+        pdf.ln(4)
+        pdf.multi_cell(165, 9, f"Se deja constancia que el demorado {st.session_state.estado_fisico.lower()}")
+        pdf.ln(10)
+        pdf.cell(165, 10, "HORA DE CESE: _________ hs.", ln=True)
+        
         return pdf.output(dest='S').encode('latin-1')
 
     if st.session_state.apellido:
-        st.download_button("📄 DESCARGAR PDF", data=generar_pdf(), file_name=f"Acta_{st.session_state.apellido}.pdf")
+        st.download_button("📄 DESCARGAR PDF", data=generar_pdf(), file_name=f"10Bis_{st.session_state.apellido}.pdf")
 
-    st.subheader("📲 WhatsApp")
-    resumen_wa = f"*ACTA 10 BIS* \n*DEMORADO:* {st.session_state.apellido} \n*DNI:* {st.session_state.dni} \n*ESTADO:* {st.session_state.estado_fisico}"
-    st.code(resumen_wa)
+    # --- WHATSAPP ESPEJO RECUPERADO ---
+    st.subheader("📲 Parte WhatsApp")
+    res_wa = f"""*{st.session_state.unidad} - {st.session_state.tercio}*
+*ACTA DE DEMORA ART 10 BIS LEY 7.395*
+
+*FECHA:* {datetime.now().strftime('%d/%m/%Y')}
+*HORA:* {st.session_state.hora_demora}
+*Lugar:* {st.session_state.lugar.upper()}
+*Jurisdicción:* {st.session_state.jurisdiccion.upper()}
+
+*PERSONAL:* {st.session_state.actuante_ap.upper()} / {st.session_state.refuerzo_ap.upper()}
+*Móvil:* {st.session_state.movil}
+
+*DEMORADO:* {st.session_state.apellido.upper()} {st.session_state.nombre.upper()}
+*DNI:* {st.session_state.dni}
+*DOMICILIO:* {st.session_state.domicilio.upper()}
+
+*ENTREGADO EN CRIA:* {st.session_state.jurisdiccion.upper()}, {st.session_state.estado_fisico}
+
+*Recibe:* {st.session_state.of_recibe}
+*Acta N• {st.session_state.acta_nro}
+*Redactó:* {st.session_state.redacta_wa}"""
+    st.code(res_wa)
 
 with tab5:
-    st.subheader("📚 Actas Cargadas en esta Sesión")
+    st.subheader("🗂️ Historial de la Sesión")
     if not st.session_state.historial:
-        st.write("No hay actas guardadas todavía.")
+        st.write("No hay registros guardados.")
     else:
         for i, reg in enumerate(reversed(st.session_state.historial)):
-            idx_real = len(st.session_state.historial) - 1 - i
-            col_hist1, col_hist2 = st.columns([3, 1])
-            col_hist1.write(f"**{reg['apellido']}** - {reg['fecha_registro']} hs (DNI: {reg['dni']})")
-            if col_hist2.button(f"Recuperar ##{idx_real}", key=f"btn_{idx_real}"):
-                recuperar_registro(idx_real)
-                st.rerun()
+            real_idx = len(st.session_state.historial) - 1 - i
+            c_h1, c_h2 = st.columns([4, 1])
+            c_h1.write(f"📌 **{reg['apellido']}** ({reg['fecha_registro']} hs)")
+            if c_h2.button("🔄 Recuperar", key=f"rec_{real_idx}"):
+                recuperar_registro(real_idx)
